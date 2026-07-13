@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Sparkles, Trash2, Copy, Check, NotebookPen, TrendingUp, FileText, Scale, Heart, Download, Upload, BookOpen, ChevronDown, ChevronUp, Leaf, Shield, Search, Library, FlaskConical, CalendarCheck, Soup, Flower2 } from "lucide-react";
+import { X, Sparkles, Trash2, Copy, Check, NotebookPen, TrendingUp, FileText, Scale, Heart, Download, Upload, BookOpen, ChevronDown, ChevronUp, Leaf, Shield, Search, Library, FlaskConical, CalendarCheck, Soup, Flower2, Camera } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 // Whimsy, by Don't Lose Your Whimsy
@@ -17,7 +17,7 @@ const BODY = "'Avenir Next', 'Avenir', 'Segoe UI', system-ui, -apple-system, san
 let COLORS = {
   bg: "#FBF1EC",        // warm blush cream
   ink: "#571F33",       // deep burgundy
-  inkSoft: "#9A6478",   // muted mauve
+  inkSoft: "#835566",   // muted mauve (darkened from #9A6478 to clear 4.5:1 text contrast on bg)
   plum: "#D64F84",      // rose pink, primary (theme accent)
   plumDark: "#A93267",  // deep raspberry (theme accent, dark)
   gold: "#C9A24B",      // gold accent (constant across themes)
@@ -708,6 +708,36 @@ const store = {
   },
 };
 
+// Shrinks a photo client-side before it ever touches localStorage. Nothing
+// leaves the device: this just resizes + re-encodes in the browser so a
+// receipt with a photo doesn't blow through the storage quota. Caps the
+// longest edge at 1000px and re-encodes as JPEG at moderate quality, which
+// keeps a typical phone photo of a lab result or letter well under 300KB.
+const MAX_PHOTO_DIM = 1000;
+const PHOTO_QUALITY = 0.72;
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Could not read image"));
+      img.onload = () => {
+        const scale = Math.min(1, MAX_PHOTO_DIM / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", PHOTO_QUALITY));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function Whimsy() {
   const [entries, setEntries] = useState([]);
   const [loaded, setLoaded] = useState(false);
@@ -766,6 +796,10 @@ export default function Whimsy() {
   const [dAccess, setDAccess] = useState("");
   const [dWait, setDWait] = useState("");
   const [dOutcome, setDOutcome] = useState("");
+  const [dPhotos, setDPhotos] = useState([]);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const [lightboxUrl, setLightboxUrl] = useState(null);
 
   // toolkit + research consent
   const [tPlan, setTPlan] = useState("");
@@ -925,6 +959,27 @@ export default function Whimsy() {
     await persist(entries.filter((e) => e.id !== id));
   };
 
+  const MAX_PHOTOS = 3;
+  const handlePhotoSelect = async (fileList) => {
+    const files = Array.from(fileList || []).filter((f) => f.type.startsWith("image/"));
+    if (files.length === 0) return;
+    const room = MAX_PHOTOS - dPhotos.length;
+    if (room <= 0) { setPhotoError(`Up to ${MAX_PHOTOS} photos per receipt.`); return; }
+    setPhotoError("");
+    setPhotoBusy(true);
+    try {
+      const picked = files.slice(0, room);
+      const compressed = await Promise.all(picked.map((f) => compressImage(f)));
+      setDPhotos((prev) => [...prev, ...compressed.map((dataUrl, i) => ({ id: Date.now().toString(36) + i, dataUrl }))]);
+    } catch (e) {
+      console.error("Photo processing failed", e);
+      setPhotoError("Couldn't process that photo. Try a different image.");
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+  const removePhoto = (id) => setDPhotos((prev) => prev.filter((p) => p.id !== id));
+
   const saveDismissal = async () => {
     const required = dType === "believed" ? dRight.trim() : dSaid.trim();
     if (!required) return;
@@ -945,6 +1000,7 @@ export default function Whimsy() {
       declined: dDeclined.join(", "),
       right: dRight.trim(),
       outcome: dOutcome.trim(),
+      photos: dPhotos.map((p) => p.dataUrl),
     };
     const next = [...dismissals, rec].sort((a, b) => a.date.localeCompare(b.date));
     const ok = await persistDismissals(next);
@@ -953,8 +1009,11 @@ export default function Whimsy() {
       setDDate(todayStr()); setDSetting("Primary care"); setDSpecialty(""); setDInsurance("");
       setDProvider(""); setDFacility(""); setDAccess(""); setDWait("");
       setDReported(""); setDSaid(""); setDDeclined([]); setDRight(""); setDOutcome("");
+      setDPhotos([]); setPhotoError("");
       setDMore(false);
       setTimeout(() => setDSaveState("idle"), 2200);
+    } else if (dPhotos.length > 0) {
+      setPhotoError("Save failed — this receipt's photos may be too large for storage. Try removing one and saving again.");
     }
   };
 
@@ -1156,6 +1215,7 @@ export default function Whimsy() {
         if (d.access) lines.push(`  Finding care with my insurance: ${d.access}`);
         if (d.wait) lines.push(`  Wait for appointment: ${d.wait}`);
         if (d.outcome) lines.push(`  Since then: ${d.outcome}`);
+        if (d.photos && d.photos.length > 0) lines.push(`  Photo evidence attached in-app (${d.photos.length}) — not included in this text export.`);
         lines.push("");
       });
     }
@@ -1177,6 +1237,7 @@ export default function Whimsy() {
     if (d.declined) lines.push(`What was declined or refused: ${d.declined}`);
     if (myConditions.length) lines.push(`Relevant conditions on record: ${myConditions.join(", ")}`);
     if (medHx.length) lines.push(`Documented allergies/failed treatments: ${medHx.map((m) => m.med).join(", ")}`);
+    if (d.photos && d.photos.length > 0) lines.push(`Supporting photo evidence (${d.photos.length}) is attached to this receipt in the Whimsy app and available on request.`);
     lines.push("");
     const section = effType && PLAYBOOKS[effType] && PLAYBOOKS[effType].find((s) => /when they say no/i.test(s.h));
     if (section) {
@@ -1510,7 +1571,7 @@ export default function Whimsy() {
         <nav className="fixed bottom-0 left-0 right-0 z-10" style={{ background: "rgba(255,252,253,0.97)", borderTop: `1px solid ${COLORS.line}`, backdropFilter: "blur(10px)", paddingBottom: "env(safe-area-inset-bottom)" }}>
           <div className="max-w-md mx-auto grid grid-cols-4">
             {NAV.map(({ id, icon: Icon, label }) => (
-              <button key={id} onClick={() => setTab(id)}
+              <button key={id} onClick={() => setTab(id)} aria-current={tab === id ? "page" : undefined}
                 className="flex flex-col items-center gap-1 pt-2.5 pb-2 focus:outline-none focus-visible:ring-2"
                 style={{ color: tab === id ? COLORS.plumDark : "#BE9CAB" }}>
                 <span key={tab === id ? "a" : "b"} className={"rounded-full px-3 py-1 " + (tab === id ? "whimsy-pop" : "")} style={{ background: tab === id ? COLORS.pill : "transparent" }}>
@@ -1521,6 +1582,22 @@ export default function Whimsy() {
             ))}
           </div>
         </nav>
+
+        {lightboxUrl && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6"
+            role="dialog" aria-modal="true" aria-label="Photo, full size"
+            style={{ background: "rgba(30,10,18,0.85)" }}
+            onClick={() => setLightboxUrl(null)}
+            onKeyDown={(e) => { if (e.key === "Escape") setLightboxUrl(null); }}>
+            <button aria-label="Close photo" onClick={() => setLightboxUrl(null)}
+              className="absolute top-5 right-5 rounded-full p-2 focus:outline-none focus-visible:ring-2"
+              style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}>
+              <X size={22} />
+            </button>
+            <img src={lightboxUrl} alt="Attached evidence, full size" onClick={(e) => e.stopPropagation()}
+              className="max-w-full max-h-full rounded-2xl" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }} />
+          </div>
+        )}
 
         {/* ------- CHECK IN ------- */}
         {tab === "today" && (
@@ -1642,7 +1719,8 @@ export default function Whimsy() {
               <input
                 type="range" min={0} max={10} step={0.5} value={pain}
                 onChange={(e) => setPain(Number(e.target.value))}
-                className="w-full whimsy-range absolute" style={{ top: "50%", transform: "translateY(-50%)" }}
+                aria-label={`Pain level, ${pain} out of 10`}
+                className="w-full whimsy-range absolute focus:outline-none focus-visible:ring-2" style={{ top: "50%", transform: "translateY(-50%)" }}
               />
               <span className="absolute pointer-events-none" style={{ left: `calc(${(pain / 10) * 100}% + ${(0.5 - pain / 10) * 26}px)`, top: "50%", transform: "translate(-50%, -50%)", transition: "left .08s linear" }}>
                 <MoodFace mood={1 - pain / 10} size={31} color={pain <= 3 ? COLORS.green : pain <= 6.5 ? COLORS.yellow : COLORS.red} />
@@ -2045,6 +2123,40 @@ export default function Whimsy() {
                 </>
               )}
 
+              <div className="mb-4">
+                <label className={labelCls} style={{ color: COLORS.inkSoft }}>Photo evidence (optional)</label>
+                <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>
+                  A lab result, a denial letter, a rash. Stays only on this device, resized before it's saved.
+                </p>
+                {dPhotos.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {dPhotos.map((p) => (
+                      <div key={p.id} className="relative">
+                        <button type="button" onClick={() => setLightboxUrl(p.dataUrl)} aria-label="View photo full size"
+                          className="block rounded-xl overflow-hidden focus:outline-none focus-visible:ring-2"
+                          style={{ width: 64, height: 64, border: `1px solid ${COLORS.line}` }}>
+                          <img src={p.dataUrl} alt="Attached evidence" className="w-full h-full object-cover" />
+                        </button>
+                        <button type="button" onClick={() => removePhoto(p.id)} aria-label="Remove photo"
+                          className="absolute -top-1.5 -right-1.5 rounded-full p-0.5 focus:outline-none focus-visible:ring-2"
+                          style={{ background: COLORS.plumDark, color: "#fff" }}>
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {dPhotos.length < MAX_PHOTOS && (
+                  <label className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-bold cursor-pointer focus-within:ring-2"
+                    style={{ border: `1.5px dashed ${COLORS.line}`, color: COLORS.plumDark, background: "transparent" }}>
+                    <Camera size={14} /> {photoBusy ? "Processing…" : "Add photo"}
+                    <input type="file" accept="image/*" className="hidden" disabled={photoBusy}
+                      onChange={(e) => { handlePhotoSelect(e.target.files); e.target.value = ""; }} />
+                  </label>
+                )}
+                {photoError && <p className="text-xs mt-1.5" style={{ color: COLORS.red }}>{photoError}</p>}
+              </div>
+
               <button
                 onClick={saveDismissal}
                 disabled={!(dType === "believed" ? dRight.trim() : dSaid.trim()) || dSaveState === "saving"}
@@ -2095,6 +2207,17 @@ export default function Whimsy() {
                         {d.declined && <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>Refused: {d.declined}</p>}
                         {(d.access || d.wait) && <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>Access: {[d.access, d.wait].filter(Boolean).join(" · ")}</p>}
                         {d.outcome && <p className="text-xs mt-0.5 italic" style={{ color: COLORS.inkSoft }}>Since then: {d.outcome}</p>}
+                        {d.photos && d.photos.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            {d.photos.map((url, pi) => (
+                              <button key={pi} type="button" onClick={() => setLightboxUrl(url)} aria-label={`View attached photo ${pi + 1} full size`}
+                                className="rounded-lg overflow-hidden focus:outline-none focus-visible:ring-2"
+                                style={{ width: 44, height: 44, border: `1px solid ${COLORS.line}` }}>
+                                <img src={url} alt="Attached evidence" className="w-full h-full object-cover" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <button onClick={() => deleteDismissal(d.id)} aria-label="Delete record"
                         className="shrink-0 p-2 rounded-lg focus:outline-none focus-visible:ring-2" style={{ color: COLORS.inkSoft }}>
@@ -2625,7 +2748,7 @@ export default function Whimsy() {
           <div className="flex gap-2 justify-center mb-4">
             <button onClick={downloadBackup}
               className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-bold focus:outline-none focus-visible:ring-2"
-              style={{ border: `1.5px solid ${COLORS.plum}`, color: COLORS.plum, background: "transparent" }}>
+              style={{ border: `1.5px solid ${COLORS.plum}`, color: COLORS.plumDark, background: "transparent" }}>
               <Download size={13} /> {backupState ? (backupState === "saved" ? "Saved ✓" : "Copied ✓") : "Take your story with you"}
             </button>
             <label className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-bold cursor-pointer focus-within:ring-2"
@@ -2724,6 +2847,8 @@ function BodyMap({ selected, setSelected, skin }) {
             const on = isOn(b.k);
             return (
               <path key={b.k} d={b.d} onClick={() => toggle(b.k)} aria-label={b.label}
+                role="button" tabIndex={0} aria-pressed={on}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(b.k); } }}
                 className="bodypart"
                 fill={on ? COLORS.plum : "transparent"}
                 stroke={on ? COLORS.plumDark : skinLine}
@@ -3069,7 +3194,7 @@ function TagInput({ label, placeholder, selected, setSelected, options, onAddCus
           {!exact && (
             <button onClick={addCustom}
               className="block w-full text-left px-3.5 py-2.5 text-sm font-semibold focus:outline-none focus-visible:ring-2"
-              style={{ color: COLORS.plum }}>
+              style={{ color: COLORS.plumDark }}>
               + Add "{q.trim()}" to your list
             </button>
           )}
@@ -3108,7 +3233,7 @@ function SuggestInput({ label, placeholder, value, setValue, options, onAddCusto
           {!exact && onAddCustom && (
             <button onMouseDown={() => { onAddCustom(value.trim()); setOpen(false); }}
               className="block w-full text-left px-3.5 py-2.5 text-sm font-semibold focus:outline-none focus-visible:ring-2"
-              style={{ color: COLORS.plum }}>
+              style={{ color: COLORS.plumDark }}>
               + Save "{value.trim()}" to the list
             </button>
           )}
