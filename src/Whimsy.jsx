@@ -95,7 +95,7 @@ const TOOLKIT_KEY = "dlyw-benefits";
 // Back torso uses shoulder-blade / lumbar / glute regions instead, since quadrants are an
 // anterior-abdomen convention and don't map onto how back pain is normally described.
 const BODY_MAP = [
-  { k: "head", label: "Head", view: "both", d: "M50 3 C58 3 63 10 63 18 C63 25 57 30 50 30 C43 30 37 25 37 18 C37 10 42 3 50 3 Z" },
+  { k: "head", label: "Head", view: "both", d: "M50 2.5 C57 2.5 62.5 7.5 62.8 14 C63 19 61 23.5 57 26.5 C54.5 28.5 52.2 29.8 50 30 C47.8 29.8 45.5 28.5 43 26.5 C39 23.5 37 19 37.2 14 C37.5 7.5 43 2.5 50 2.5 Z" },
   { k: "neck", label: "Neck / throat", view: "both", d: "M45 29 h10 v7 h-10 z" },
   { k: "shoulderL", label: "Left shoulder", view: "both", d: "M43 36 C36 37 30 40 26 46 L34 52 C36 45 39 39 43 36 Z" },
   { k: "shoulderR", label: "Right shoulder", view: "both", d: "M57 36 C64 37 70 40 74 46 L66 52 C64 45 61 39 57 36 Z" },
@@ -3008,6 +3008,11 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, onOpenAppearan
             <path d={BODY_OUTLINE} fill="none" stroke={skinLine} strokeWidth="1.3" strokeLinejoin="round" style={{ pointerEvents: "none" }} />
             {view === "front" ? (
               <g style={{ pointerEvents: "none" }}>
+                {/* faint cheekbone/jaw contour, so the head reads as sculpted rather than flat */}
+                <g opacity="0.22">
+                  <path d="M41 10.5 Q39 15 40.5 19.5 Q41.5 22.5 43.5 25" fill="none" stroke={skinLine} strokeWidth="0.5" strokeLinecap="round" />
+                  <path d="M59 10.5 Q61 15 59.5 19.5 Q58.5 22.5 56.5 25" fill="none" stroke={skinLine} strokeWidth="0.5" strokeLinecap="round" />
+                </g>
                 {/* soft arched brows */}
                 <g opacity="0.6">
                   <path d="M43.2 11.3 Q45.3 10 47.6 11.1" fill="none" stroke={COLORS.plumDark} strokeWidth="0.6" strokeLinecap="round" />
