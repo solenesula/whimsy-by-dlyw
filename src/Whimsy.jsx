@@ -2959,12 +2959,23 @@ function getHairOverlay(styleKey, hairColor) {
       );
       break;
     case "braids": {
-      const startXs = [38, 41, 44, 47, 50, 53, 56, 59, 62];
-      startXs.forEach((x, i) => {
-        const drift = i % 2 === 0 ? -1.6 : 1.6;
-        const len = 44 + (i % 3) * 3;
+      // Parted at the center and swept to the sides like curtain bangs, so strands frame
+      // the face along the hairline/temples and fall past the shoulders, never crossing
+      // over the eyes, nose, or mouth.
+      const starts = [50, 48.7, 47.2, 45.5, 43.6];
+      starts.forEach((x0, i) => {
+        const midX = 35.5 - i * 1.3;
+        const endX = 30 - i * 0.9;
+        const endY = 40 + (i % 3) * 5;
         above.push(
-          <path key={"braid" + i} d={`M${x} 6 C${x + drift} 20 ${x + drift * 1.3} 34 ${x} ${len}`}
+          <path key={"braidL" + i}
+            d={`M${x0} 3 C${midX + 8} 9 ${midX + 1} 17 ${midX - 1} 25 C${midX - 2.5} 33 ${endX} 36 ${endX} ${endY}`}
+            stroke={hairColor} strokeWidth="0.9" fill="none" opacity="0.5" strokeLinecap="round" />
+        );
+        const x0r = 100 - x0, midXr = 100 - midX, endXr = 100 - endX;
+        above.push(
+          <path key={"braidR" + i}
+            d={`M${x0r} 3 C${midXr - 8} 9 ${midXr - 1} 17 ${midXr + 1} 25 C${midXr + 2.5} 33 ${endXr} 36 ${endXr} ${endY}`}
             stroke={hairColor} strokeWidth="0.9" fill="none" opacity="0.5" strokeLinecap="round" />
         );
       });
@@ -2978,11 +2989,21 @@ function getHairOverlay(styleKey, hairColor) {
       break;
     }
     case "locs": {
-      const startXs = [39, 43.5, 50, 56.5, 61];
-      startXs.forEach((x, i) => {
-        const len = 40 + (i % 3) * 6;
+      // Same curtain-bangs framing as braids, just thicker strands with more taper/length variation.
+      const starts = [50, 48, 45.8, 43.3];
+      starts.forEach((x0, i) => {
+        const midX = 34 - i * 1.6;
+        const endX = 29 - i * 1.1;
+        const len = 44 + (i % 3) * 6;
         above.push(
-          <path key={"loc" + i} d={`M${x} 5 C${x} 20 ${x} 32 ${x} ${len}`}
+          <path key={"locL" + i}
+            d={`M${x0} 3.5 C${midX + 9} 11 ${midX + 1} 21 ${midX - 1} 30 C${midX - 3} 37 ${endX} 40 ${endX} ${len}`}
+            stroke={hairColor} strokeWidth="1.4" fill="none" opacity="0.55" strokeLinecap="round" />
+        );
+        const x0r = 100 - x0, midXr = 100 - midX, endXr = 100 - endX;
+        above.push(
+          <path key={"locR" + i}
+            d={`M${x0r} 3.5 C${midXr - 9} 11 ${midXr - 1} 21 ${midXr + 1} 30 C${midXr + 3} 37 ${endXr} 40 ${endXr} ${len}`}
             stroke={hairColor} strokeWidth="1.4" fill="none" opacity="0.55" strokeLinecap="round" />
         );
       });
