@@ -46,6 +46,31 @@ const SKIN_TONES = [
   { key: "porcelain", label: "Porcelain", fill: "#F1D3B4", glow: "#F6E0C8" },
 ];
 
+// Body map comes in a few different builds so the silhouette doesn't default to a single
+// "ideal" body type. Each scales the same outline horizontally around its center, so limbs,
+// waist, and hips all widen together and the tap zones underneath still line up.
+const BODY_SHAPES = [
+  { key: "b1", label: "Body type 1", scaleX: 1.0 },
+  { key: "b2", label: "Body type 2 (default)", scaleX: 1.16 },
+  { key: "b3", label: "Body type 3", scaleX: 1.34 },
+];
+
+// Hairstyle options for the body map's silhouette, styled after natural and protective
+// styles Black women actually wear day to day. "Bald / shaved" is included deliberately,
+// not just as a placeholder: hair loss (alopecia, chemo, lupus, postpartum, trichotillomania)
+// is part of the reality this app documents, so a bare head is offered as its own real option.
+const HAIRSTYLES = [
+  { key: "afro", label: "Afro" },
+  { key: "puff", label: "High puff" },
+  { key: "spacebuns", label: "Space buns" },
+  { key: "ponytail", label: "Ponytail" },
+  { key: "braids", label: "Braids" },
+  { key: "bantu", label: "Bantu knots" },
+  { key: "locs", label: "Locs" },
+  { key: "headwrap", label: "Headwrap" },
+  { key: "bald", label: "Bald / shaved" },
+];
+
 const TEXT_SCALES = [
   { key: "default", label: "Default", pct: 100 },
   { key: "large", label: "Large", pct: 115 },
@@ -819,6 +844,8 @@ export default function Whimsy() {
   // appearance preferences
   const [theme, setTheme] = useState("blush");
   const [skinTone, setSkinTone] = useState("blush");
+  const [bodyShape, setBodyShape] = useState("b2");
+  const [hairStyle, setHairStyle] = useState("afro");
   const [textScale, setTextScale] = useState("default");
   const [motionOff, setMotionOff] = useState(false);
 
@@ -831,6 +858,7 @@ export default function Whimsy() {
   COLORS.line = activeTheme.line;
   GRAD = `linear-gradient(135deg, ${activeTheme.plum}, ${activeTheme.plumDark})`;
   const activeSkin = SKIN_TONES.find((s) => s.key === skinTone) || SKIN_TONES[0];
+  const activeBodyShape = BODY_SHAPES.find((s) => s.key === bodyShape) || BODY_SHAPES[1];
   const activeScale = TEXT_SCALES.find((s) => s.key === textScale) || TEXT_SCALES[0];
 
   useEffect(() => {
@@ -862,6 +890,8 @@ export default function Whimsy() {
       setRSeen(tk.rSeen === true);
       if (typeof tk.theme === "string") setTheme(tk.theme);
       if (typeof tk.skinTone === "string") setSkinTone(tk.skinTone);
+      if (typeof tk.bodyShape === "string") setBodyShape(tk.bodyShape);
+      if (typeof tk.hairStyle === "string") setHairStyle(tk.hairStyle);
       if (typeof tk.textScale === "string") setTextScale(tk.textScale);
       if (typeof tk.motionOff === "boolean") setMotionOff(tk.motionOff);
     } else {
@@ -878,11 +908,11 @@ export default function Whimsy() {
       store.set(TOOLKIT_KEY, {
         plan: tPlan, planType: tType, checked: tChecked, consent: rConsent,
         conditions: myConditions, name: myName, medHx, prepNotes, prepSpecialty,
-        setupDone, rSeen, theme, skinTone, textScale, motionOff,
+        setupDone, rSeen, theme, skinTone, bodyShape, hairStyle, textScale, motionOff,
       });
     }, 600);
     return () => clearTimeout(timer);
-  }, [tPlan, tType, tChecked, rConsent, myConditions, myName, medHx, prepNotes, prepSpecialty, setupDone, rSeen, theme, skinTone, textScale, motionOff, loaded]);
+  }, [tPlan, tType, tChecked, rConsent, myConditions, myName, medHx, prepNotes, prepSpecialty, setupDone, rSeen, theme, skinTone, bodyShape, hairStyle, textScale, motionOff, loaded]);
 
 
 
@@ -1732,7 +1762,7 @@ export default function Whimsy() {
                 <label className={labelCls} style={{ color: COLORS.inkSoft, marginBottom: 0 }}>Where does it hurt?</label>
                 <span className="text-[11px]" style={{ color: COLORS.inkSoft }}>tap where it aches</span>
               </div>
-              <BodyMap selected={painAreas} setSelected={setPainAreas} skin={activeSkin}
+              <BodyMap selected={painAreas} setSelected={setPainAreas} skin={activeSkin} shape={activeBodyShape} hairStyle={hairStyle}
                 onOpenAppearance={() => { setTab("toolkit"); setOpenTool("appearance"); }} />
               {painAreas.length > 0 && (
                 <p className="text-xs mt-2 text-center" style={{ color: COLORS.plumDark, fontFamily: SERIF, fontStyle: "italic" }}>
@@ -2409,6 +2439,29 @@ export default function Whimsy() {
                 ))}
               </div>
 
+              <p className={labelCls} style={{ color: COLORS.inkSoft }}>Body type</p>
+              <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>The body map isn't one default shape. Pick whichever feels like you.</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {BODY_SHAPES.map((s) => (
+                  <button key={s.key} onClick={() => setBodyShape(s.key)} aria-label={s.label} aria-pressed={bodyShape === s.key}
+                    className="rounded-full px-3.5 py-2 text-xs font-semibold focus:outline-none focus-visible:ring-2"
+                    style={{ border: `2px solid ${bodyShape === s.key ? COLORS.plumDark : COLORS.line}`, background: bodyShape === s.key ? COLORS.pill : COLORS.card, color: COLORS.ink }}>
+                    {s.label.replace(" (default)", "")}
+                  </button>
+                ))}
+              </div>
+
+              <p className={labelCls} style={{ color: COLORS.inkSoft }}>Hairstyle</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {HAIRSTYLES.map((h) => (
+                  <button key={h.key} onClick={() => setHairStyle(h.key)} aria-label={h.label} aria-pressed={hairStyle === h.key}
+                    className="rounded-full px-3.5 py-2 text-xs font-semibold focus:outline-none focus-visible:ring-2"
+                    style={{ border: `2px solid ${hairStyle === h.key ? COLORS.plumDark : COLORS.line}`, background: hairStyle === h.key ? COLORS.pill : COLORS.card, color: COLORS.ink }}>
+                    {h.label}
+                  </button>
+                ))}
+              </div>
+
               <p className={labelCls} style={{ color: COLORS.inkSoft }}>Text size</p>
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {TEXT_SCALES.map((s) => (
@@ -2816,7 +2869,88 @@ function GroupLabel({ children, first }) {
   );
 }
 
-function BodyMap({ selected, setSelected, skin, onOpenAppearance }) {
+// Renders the chosen hairstyle as two layers: "behind" paints before the head silhouette
+// (so it can flare out past the head's edge, like an afro halo), "above" paints after (so it
+// sits on top of the scalp, like a puff, buns, or a headwrap). Same shapes serve both the
+// front and back views so a style stays recognizable no matter which way the body is turned.
+function getHairOverlay(styleKey, hairColor) {
+  const behind = [];
+  const above = [];
+  switch (styleKey) {
+    case "afro":
+      behind.push(
+        <circle key="afro-cloud" cx="50" cy="15.5" r="17.5" fill={hairColor} opacity="0.55" />,
+        <circle key="afro-tuft-l" cx="31" cy="18" r="3.2" fill={hairColor} opacity="0.5" />,
+        <circle key="afro-tuft-r" cx="69" cy="18" r="3.2" fill={hairColor} opacity="0.5" />,
+        <circle key="afro-tuft-t" cx="50" cy="-2" r="3.4" fill={hairColor} opacity="0.5" />
+      );
+      break;
+    case "puff":
+      above.push(
+        <ellipse key="puff" cx="50" cy="0.5" rx="7.5" ry="6" fill={hairColor} opacity="0.6" />,
+        <path key="puff-band" d="M43 6 Q50 8.2 57 6" stroke={hairColor} strokeWidth="1.3" fill="none" opacity="0.75" strokeLinecap="round" />
+      );
+      break;
+    case "spacebuns":
+      above.push(
+        <ellipse key="bun-l" cx="39" cy="2" rx="5.2" ry="4.4" fill={hairColor} opacity="0.6" />,
+        <ellipse key="bun-r" cx="61" cy="2" rx="5.2" ry="4.4" fill={hairColor} opacity="0.6" />,
+        <path key="bun-l-band" d="M35.5 6 Q39 7.8 42.5 6" stroke={hairColor} strokeWidth="1" fill="none" opacity="0.7" strokeLinecap="round" />,
+        <path key="bun-r-band" d="M57.5 6 Q61 7.8 64.5 6" stroke={hairColor} strokeWidth="1" fill="none" opacity="0.7" strokeLinecap="round" />
+      );
+      break;
+    case "ponytail":
+      above.push(
+        <ellipse key="pony-gather" cx="50" cy="1.5" rx="6.5" ry="5" fill={hairColor} opacity="0.6" />,
+        <path key="pony-tail" d="M55 4 C60 11 63 22 59 32 C57.5 25 56 14 54 6 Z" fill={hairColor} opacity="0.5" />
+      );
+      break;
+    case "braids": {
+      const startXs = [40, 44, 56, 60];
+      startXs.forEach((x, i) => {
+        const drift = i % 2 === 0 ? -2 : 2;
+        above.push(
+          <path key={"braid" + i} d={`M${x} 6 C${x + drift} 20 ${x + drift * 1.5} 34 ${x} 46`}
+            stroke={hairColor} strokeWidth="1" fill="none" opacity="0.5" strokeLinecap="round" />
+        );
+      });
+      break;
+    }
+    case "bantu": {
+      const knots = [[42, 3], [50, 0.5], [58, 3], [45.5, 7.5], [54.5, 7.5]];
+      knots.forEach(([x, y], i) => {
+        above.push(<circle key={"knot" + i} cx={x} cy={y} r="2.6" fill={hairColor} opacity="0.6" />);
+      });
+      break;
+    }
+    case "locs": {
+      const startXs = [39, 43.5, 50, 56.5, 61];
+      startXs.forEach((x, i) => {
+        const len = 40 + (i % 3) * 6;
+        above.push(
+          <path key={"loc" + i} d={`M${x} 5 C${x} 20 ${x} 32 ${x} ${len}`}
+            stroke={hairColor} strokeWidth="1.4" fill="none" opacity="0.55" strokeLinecap="round" />
+        );
+      });
+      break;
+    }
+    case "headwrap":
+      above.push(
+        <path key="wrap" d="M35.5 15 C35.5 6 42 0.5 50 0.5 C58 0.5 64.5 6 64.5 15 L64 18.5 C56 16 44 16 36 18.5 Z"
+          fill={hairColor} opacity="0.65" />,
+        <path key="wrap-knot-l" d="M45 1.5 L41 -2.5 L48.5 0.5 Z" fill={hairColor} opacity="0.6" />,
+        <path key="wrap-knot-r" d="M55 1.5 L59 -2.5 L51.5 0.5 Z" fill={hairColor} opacity="0.6" />,
+        <path key="wrap-line" d="M37 12 Q50 9 63 12" stroke={hairColor} strokeWidth="0.6" fill="none" opacity="0.5" />
+      );
+      break;
+    case "bald":
+    default:
+      break;
+  }
+  return { behind, above };
+}
+
+function BodyMap({ selected, setSelected, skin, shape, hairStyle, onOpenAppearance }) {
   const [view, setView] = useState("front");
   const toggle = (k) => setSelected(selected.includes(k) ? selected.filter((x) => x !== k) : [...selected, k]);
   const viewParts = BODY_MAP.filter((b) => b.d && (b.view === "both" || b.view === view));
@@ -2827,6 +2961,8 @@ function BodyMap({ selected, setSelected, skin, onOpenAppearance }) {
   const isOn = (k) => selected.includes(k) || allOver || (joints && jointKeys.includes(k));
   const skinFill = skin?.fill || "#F6D9DE";
   const skinLine = skin?.glow || "#DFA6BA";
+  const scaleX = shape?.scaleX ?? 1;
+  const hair = getHairOverlay(hairStyle, skinLine);
   return (
     <div>
       <div className="flex items-center justify-center gap-2 mb-2">
@@ -2851,40 +2987,65 @@ function BodyMap({ selected, setSelected, skin, onOpenAppearance }) {
         <span className="whimsy-sway absolute" style={{ left: 12, bottom: 6, opacity: 0.3 }}><Sprig size={22} /></span>
         <span className="whimsy-float absolute" style={{ right: 14, top: 8, opacity: 0.5 }}><Sparkles size={13} style={{ color: COLORS.gold }} /></span>
         <svg width="126" height="205" viewBox="14 -1 72 172" aria-label={`Body map, ${view} view. Tap where it aches.`}>
-          <path d={BODY_OUTLINE} fill={skinFill} stroke="none" />
-          {viewParts.map((b) => {
-            const on = isOn(b.k);
-            return (
-              <path key={b.k} d={b.d} onClick={() => toggle(b.k)} aria-label={b.label}
-                role="button" tabIndex={0} aria-pressed={on}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(b.k); } }}
-                className="bodypart"
-                fill={on ? COLORS.plum : "transparent"}
-                stroke={on ? COLORS.plumDark : skinLine}
-                strokeWidth={on ? 0.9 : 0.5} strokeLinejoin="round" />
-            );
-          })}
-          {viewParts.filter((b) => isOn(b.k)).map((b) => (
-            <path key={b.k + "-glow"} d={b.d} fill="none" stroke={COLORS.plum} strokeWidth="2.6" opacity="0.3" className="ache" style={{ pointerEvents: "none" }} />
-          ))}
-          <path d={BODY_OUTLINE} fill="none" stroke={skinLine} strokeWidth="1.3" strokeLinejoin="round" style={{ pointerEvents: "none" }} />
-          {view === "front" ? (
-            <g style={{ pointerEvents: "none" }} opacity="0.6">
-              <circle cx="45.5" cy="13.5" r="1.1" fill={COLORS.plumDark} />
-              <circle cx="54.5" cy="13.5" r="1.1" fill={COLORS.plumDark} />
-              <path d="M45 19 Q50 22.5 55 19" fill="none" stroke={COLORS.plumDark} strokeWidth="1" strokeLinecap="round" />
-              <path d="M40 41 Q44 47.5 48.5 42.5" fill="none" stroke={skinLine} strokeWidth="0.6" opacity="0.85" strokeLinecap="round" />
-              <path d="M51.5 42.5 Q56 47.5 60 41" fill="none" stroke={skinLine} strokeWidth="0.6" opacity="0.85" strokeLinecap="round" />
-            </g>
-          ) : (
-            <g style={{ pointerEvents: "none" }}>
-              <path d="M37 11 C37 5 43 2 50 2 C57 2 63 5 63 11 C63 15 61 18 58 19 C58.5 13.5 55 9.5 50 9.5 C45 9.5 41.5 13.5 42 19 C39 18 37 15 37 11 Z"
-                fill={skinLine} opacity="0.55" />
-              <path d="M50 36 L50 73" stroke={skinLine} strokeWidth="0.6" opacity="0.55" strokeDasharray="1.2 2" />
-              <path d="M40 40 Q46 46 42 54" fill="none" stroke={skinLine} strokeWidth="0.5" opacity="0.45" />
-              <path d="M60 40 Q54 46 58 54" fill="none" stroke={skinLine} strokeWidth="0.5" opacity="0.45" />
-            </g>
-          )}
+          <g transform={`translate(50,0) scale(${scaleX},1) translate(-50,0)`}>
+            {hair.behind}
+            <path d={BODY_OUTLINE} fill={skinFill} stroke="none" />
+            {viewParts.map((b) => {
+              const on = isOn(b.k);
+              return (
+                <path key={b.k} d={b.d} onClick={() => toggle(b.k)} aria-label={b.label}
+                  role="button" tabIndex={0} aria-pressed={on}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(b.k); } }}
+                  className="bodypart"
+                  fill={on ? COLORS.plum : "transparent"}
+                  stroke={on ? COLORS.plumDark : skinLine}
+                  strokeWidth={on ? 0.9 : 0.5} strokeLinejoin="round" />
+              );
+            })}
+            {viewParts.filter((b) => isOn(b.k)).map((b) => (
+              <path key={b.k + "-glow"} d={b.d} fill="none" stroke={COLORS.plum} strokeWidth="2.6" opacity="0.3" className="ache" style={{ pointerEvents: "none" }} />
+            ))}
+            <path d={BODY_OUTLINE} fill="none" stroke={skinLine} strokeWidth="1.3" strokeLinejoin="round" style={{ pointerEvents: "none" }} />
+            {view === "front" ? (
+              <g style={{ pointerEvents: "none" }}>
+                <g opacity="0.7">
+                  <path d="M42.8 11 Q45.3 9.2 48 10.7" fill="none" stroke={COLORS.plumDark} strokeWidth="0.8" strokeLinecap="round" />
+                  <path d="M52 10.7 Q54.7 9.2 57.2 11" fill="none" stroke={COLORS.plumDark} strokeWidth="0.8" strokeLinecap="round" />
+                </g>
+                {/* big, round, lashed eyes with a little shine, like a cute stylized avatar */}
+                <g>
+                  <ellipse cx="45.3" cy="14.5" rx="1.7" ry="1.9" fill={COLORS.plumDark} opacity="0.85" />
+                  <ellipse cx="54.7" cy="14.5" rx="1.7" ry="1.9" fill={COLORS.plumDark} opacity="0.85" />
+                  <circle cx="45.9" cy="13.6" r="0.55" fill="#fff" opacity="0.9" />
+                  <circle cx="55.3" cy="13.6" r="0.55" fill="#fff" opacity="0.9" />
+                  <g stroke={COLORS.plumDark} strokeWidth="0.55" strokeLinecap="round" opacity="0.8">
+                    <path d="M43.6 12.6 L42.6 11.5" />
+                    <path d="M44.4 12.1 L43.7 10.8" />
+                    <path d="M45.3 12 L45.1 10.6" />
+                    <path d="M56.4 12.6 L57.4 11.5" />
+                    <path d="M55.6 12.1 L56.3 10.8" />
+                    <path d="M54.7 12 L54.9 10.6" />
+                  </g>
+                </g>
+                {/* rosy cheeks */}
+                <g opacity="0.35">
+                  <ellipse cx="41.5" cy="18.5" rx="2.6" ry="1.7" fill={COLORS.plum} />
+                  <ellipse cx="58.5" cy="18.5" rx="2.6" ry="1.7" fill={COLORS.plum} />
+                </g>
+                <path d="M45 19.2 Q50 22.8 55 19.2 Q50 21.3 45 19.2 Z" fill={COLORS.plumDark} opacity="0.45" />
+                <path d="M45 19 Q47.5 17.8 50 18.7 Q52.5 17.8 55 19" fill="none" stroke={COLORS.plumDark} strokeWidth="0.7" strokeLinecap="round" opacity="0.7" />
+                <path d="M40 41 Q44 47.5 48.5 42.5" fill="none" stroke={skinLine} strokeWidth="0.6" opacity="0.85" strokeLinecap="round" />
+                <path d="M51.5 42.5 Q56 47.5 60 41" fill="none" stroke={skinLine} strokeWidth="0.6" opacity="0.85" strokeLinecap="round" />
+              </g>
+            ) : (
+              <g style={{ pointerEvents: "none" }}>
+                <path d="M50 36 L50 73" stroke={skinLine} strokeWidth="0.6" opacity="0.55" strokeDasharray="1.2 2" />
+                <path d="M40 40 Q46 46 42 54" fill="none" stroke={skinLine} strokeWidth="0.5" opacity="0.45" />
+                <path d="M60 40 Q54 46 58 54" fill="none" stroke={skinLine} strokeWidth="0.5" opacity="0.45" />
+              </g>
+            )}
+            <g style={{ pointerEvents: "none" }}>{hair.above}</g>
+          </g>
         </svg>
       </div>
       <p className="text-center text-[0.68rem] mt-1.5 italic" style={{ color: COLORS.inkSoft }}>
