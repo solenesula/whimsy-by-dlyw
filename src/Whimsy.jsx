@@ -2901,6 +2901,61 @@ function GroupLabel({ children, first }) {
   );
 }
 
+// Small color-math helpers so skin and hair can get real gradient shading (a lit side and
+// a shadow side, like the mannequin references) instead of one flat fill everywhere.
+function mixHex(hex, target, amt) {
+  const h = hex.replace("#", "");
+  const t = target.replace("#", "");
+  const r1 = parseInt(h.substr(0, 2), 16), g1 = parseInt(h.substr(2, 2), 16), b1 = parseInt(h.substr(4, 2), 16);
+  const r2 = parseInt(t.substr(0, 2), 16), g2 = parseInt(t.substr(2, 2), 16), b2 = parseInt(t.substr(4, 2), 16);
+  const mix = (a, b) => Math.round(a + (b - a) * amt);
+  return `rgb(${mix(r1, r2)}, ${mix(g1, g2)}, ${mix(b1, b2)})`;
+}
+const lighten = (hex, amt) => mixHex(hex, "#ffffff", amt);
+const darken = (hex, amt) => mixHex(hex, "#000000", amt);
+
+// Evaluates a point on a cubic bezier at t, for sampling a strand's centerline.
+function bezPt(p0, p1, p2, p3, t) {
+  const mt = 1 - t;
+  return [
+    mt * mt * mt * p0[0] + 3 * mt * mt * t * p1[0] + 3 * mt * t * t * p2[0] + t * t * t * p3[0],
+    mt * mt * mt * p0[1] + 3 * mt * mt * t * p1[1] + 3 * mt * t * t * p2[1] + t * t * t * p3[1],
+  ];
+}
+
+// A real 3-strand plait works by repeatedly crossing the outer strands over the middle
+// one, which is what actually produces the rope-like alternating texture of braided or
+// loc'd hair — a single smooth stroke can't read as "braided," it just reads as a limp
+// line. This samples a strand's two-segment bezier centerline, then offsets two paths
+// (a lighter strand and a darker strand) to opposite sides of the centerline in a sine
+// wave, so they cross back and forth exactly like alternating which strand is "on top,"
+// giving each braid/loc a visible twist instead of a flat line.
+function braidTwistPaths(anchors, opts = {}) {
+  const { twists = 4.5, amp = 0.85, samples = 22 } = opts;
+  const [p0, c1, c2, p1, c3, c4, p2] = anchors;
+  const pts = [];
+  for (let i = 0; i <= samples; i++) {
+    const t = i / samples;
+    pts.push(t <= 0.5 ? bezPt(p0, c1, c2, p1, t / 0.5) : bezPt(p1, c3, c4, p2, (t - 0.5) / 0.5));
+  }
+  const lightPts = [];
+  const darkPts = [];
+  for (let i = 0; i < pts.length; i++) {
+    const [x, y] = pts[i];
+    const prev = pts[Math.max(0, i - 1)];
+    const next = pts[Math.min(pts.length - 1, i + 1)];
+    const dx = next[0] - prev[0], dy = next[1] - prev[1];
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    const t = i / (pts.length - 1);
+    const wig = Math.sin(t * Math.PI * twists) * amp;
+    lightPts.push([x + nx * wig, y + ny * wig]);
+    darkPts.push([x - nx * wig, y - ny * wig]);
+  }
+  const toPath = (arr) => arr.map((p, i) => (i === 0 ? `M${p[0].toFixed(2)} ${p[1].toFixed(2)}` : `L${p[0].toFixed(2)} ${p[1].toFixed(2)}`)).join(" ");
+  return { light: toPath(lightPts), dark: toPath(darkPts) };
+}
+
 // Renders the chosen hairstyle as three layers: "behind" paints before the head silhouette
 // (so it can flare out past the head's edge, like an afro halo); "scalp" paints on top of the
 // skin but underneath the face, a low natural hairline covering the crown so every style (other
@@ -2961,22 +3016,29 @@ function getHairOverlay(styleKey, hairColor) {
     case "braids": {
       // Parted at the center and swept to the sides like curtain bangs, so strands frame
       // the face along the hairline/temples and fall past the shoulders, never crossing
-      // over the eyes, nose, or mouth.
+      // over the eyes, nose, or mouth. Each strand is rendered as an actual plait: a real
+      // 3-strand braid works by repeatedly crossing the outer sections over the middle
+      // one, which is what produces its rope-like texture — so instead of one flat line,
+      // each braid is two offset strands (a lit side and a shadow side) that visibly cross
+      // back and forth along its length.
+      const lightC = lighten(hairColor, 0.3), darkC = darken(hairColor, 0.35);
       const starts = [50, 48.7, 47.2, 45.5, 43.6];
       starts.forEach((x0, i) => {
         const midX = 35.5 - i * 1.3;
         const endX = 30 - i * 0.9;
         const endY = 40 + (i % 3) * 5;
+        const anchorsL = [[x0, 3], [midX + 8, 9], [midX + 1, 17], [midX - 1, 25], [midX - 2.5, 33], [endX, 36], [endX, endY]];
+        const twistL = braidTwistPaths(anchorsL, { twists: 4.5 + (i % 2), amp: 0.8 });
         above.push(
-          <path key={"braidL" + i}
-            d={`M${x0} 3 C${midX + 8} 9 ${midX + 1} 17 ${midX - 1} 25 C${midX - 2.5} 33 ${endX} 36 ${endX} ${endY}`}
-            stroke={hairColor} strokeWidth="0.9" fill="none" opacity="0.5" strokeLinecap="round" />
+          <path key={"braidL" + i + "d"} d={twistL.dark} stroke={darkC} strokeWidth="0.7" fill="none" opacity="0.55" strokeLinecap="round" strokeLinejoin="round" />,
+          <path key={"braidL" + i + "l"} d={twistL.light} stroke={lightC} strokeWidth="0.7" fill="none" opacity="0.6" strokeLinecap="round" strokeLinejoin="round" />
         );
         const x0r = 100 - x0, midXr = 100 - midX, endXr = 100 - endX;
+        const anchorsR = [[x0r, 3], [midXr - 8, 9], [midXr - 1, 17], [midXr + 1, 25], [midXr + 2.5, 33], [endXr, 36], [endXr, endY]];
+        const twistR = braidTwistPaths(anchorsR, { twists: 4.5 + (i % 2), amp: 0.8 });
         above.push(
-          <path key={"braidR" + i}
-            d={`M${x0r} 3 C${midXr - 8} 9 ${midXr - 1} 17 ${midXr + 1} 25 C${midXr + 2.5} 33 ${endXr} 36 ${endXr} ${endY}`}
-            stroke={hairColor} strokeWidth="0.9" fill="none" opacity="0.5" strokeLinecap="round" />
+          <path key={"braidR" + i + "d"} d={twistR.dark} stroke={darkC} strokeWidth="0.7" fill="none" opacity="0.55" strokeLinecap="round" strokeLinejoin="round" />,
+          <path key={"braidR" + i + "l"} d={twistR.light} stroke={lightC} strokeWidth="0.7" fill="none" opacity="0.6" strokeLinecap="round" strokeLinejoin="round" />
         );
       });
       break;
@@ -2989,22 +3051,26 @@ function getHairOverlay(styleKey, hairColor) {
       break;
     }
     case "locs": {
-      // Same curtain-bangs framing as braids, just thicker strands with more taper/length variation.
+      // Same curtain-bangs framing as braids. Locs are thicker and twist more slowly than
+      // braids (fewer, longer twists per strand), using the same real cross-over rendering.
+      const lightC = lighten(hairColor, 0.25), darkC = darken(hairColor, 0.3);
       const starts = [50, 48, 45.8, 43.3];
       starts.forEach((x0, i) => {
         const midX = 34 - i * 1.6;
         const endX = 29 - i * 1.1;
         const len = 44 + (i % 3) * 6;
+        const anchorsL = [[x0, 3.5], [midX + 9, 11], [midX + 1, 21], [midX - 1, 30], [midX - 3, 37], [endX, 40], [endX, len]];
+        const twistL = braidTwistPaths(anchorsL, { twists: 2.5, amp: 0.6 });
         above.push(
-          <path key={"locL" + i}
-            d={`M${x0} 3.5 C${midX + 9} 11 ${midX + 1} 21 ${midX - 1} 30 C${midX - 3} 37 ${endX} 40 ${endX} ${len}`}
-            stroke={hairColor} strokeWidth="1.4" fill="none" opacity="0.55" strokeLinecap="round" />
+          <path key={"locL" + i + "d"} d={twistL.dark} stroke={darkC} strokeWidth="1.1" fill="none" opacity="0.6" strokeLinecap="round" strokeLinejoin="round" />,
+          <path key={"locL" + i + "l"} d={twistL.light} stroke={lightC} strokeWidth="1.1" fill="none" opacity="0.55" strokeLinecap="round" strokeLinejoin="round" />
         );
         const x0r = 100 - x0, midXr = 100 - midX, endXr = 100 - endX;
+        const anchorsR = [[x0r, 3.5], [midXr - 9, 11], [midXr - 1, 21], [midXr + 1, 30], [midXr + 3, 37], [endXr, 40], [endXr, len]];
+        const twistR = braidTwistPaths(anchorsR, { twists: 2.5, amp: 0.6 });
         above.push(
-          <path key={"locR" + i}
-            d={`M${x0r} 3.5 C${midXr - 9} 11 ${midXr - 1} 21 ${midXr + 1} 30 C${midXr + 3} 37 ${endXr} 40 ${endXr} ${len}`}
-            stroke={hairColor} strokeWidth="1.4" fill="none" opacity="0.55" strokeLinecap="round" />
+          <path key={"locR" + i + "d"} d={twistR.dark} stroke={darkC} strokeWidth="1.1" fill="none" opacity="0.6" strokeLinecap="round" strokeLinejoin="round" />,
+          <path key={"locR" + i + "l"} d={twistR.light} stroke={lightC} strokeWidth="1.1" fill="none" opacity="0.55" strokeLinecap="round" strokeLinejoin="round" />
         );
       });
       break;
@@ -3063,9 +3129,19 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
         <span className="whimsy-sway absolute" style={{ left: 12, bottom: 6, opacity: 0.3 }}><Sprig size={22} /></span>
         <span className="whimsy-float absolute" style={{ right: 14, top: 8, opacity: 0.5 }}><Sparkles size={13} style={{ color: COLORS.gold }} /></span>
         <svg width="126" height="205" viewBox="14 -1 72 172" aria-label={`Body map, ${view} view. Tap where it aches.`}>
+          <defs>
+            {/* A soft lit side (upper-left) to shadow side (lower-right) gradient, so the
+                body reads as a rounded, sculpted figure instead of one flat fill — the
+                same directional light the mannequin references showed. */}
+            <radialGradient id={`skinGrad-${skin?.key || "default"}`} cx="38%" cy="20%" r="95%">
+              <stop offset="0%" stopColor={lighten(skinFill, 0.35)} />
+              <stop offset="55%" stopColor={skinFill} />
+              <stop offset="100%" stopColor={skinLine} />
+            </radialGradient>
+          </defs>
           <g transform={`translate(50,0) scale(${scaleX},1) translate(-50,0)`}>
             {hair.behind}
-            <path d={BODY_OUTLINE} fill={skinFill} stroke="none" />
+            <path d={BODY_OUTLINE} fill={`url(#skinGrad-${skin?.key || "default"})`} stroke="none" />
             {viewParts.map((b) => {
               const on = isOn(b.k);
               return (
