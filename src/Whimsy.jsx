@@ -6,22 +6,50 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 // Log your body, keep your proof, know your benefits. Never diagnoses. Always yours.
 
 const SERIF = "'Didot', 'Bodoni 72', 'Playfair Display', 'Baskerville', Georgia, serif";
+// Didot/Bodoni are Mac-only; Playfair Display is loaded as a real web font (see index.html)
+// so everyone else gets the intended italic-serif brand feel instead of falling through to Georgia.
 const BODY = "'Avenir Next', 'Avenir', 'Segoe UI', system-ui, -apple-system, sans-serif";
 
-const COLORS = {
+// COLORS and GRAD are intentionally `let`, not `const`: Whimsy() mutates the accent-carrying
+// properties at the top of each render based on the chosen theme, so every sibling component
+// declared below (BodyMap, SpoonMeter, TagInput, etc.) picks up the current theme through the
+// same shared reference without needing theme threaded through as a prop everywhere.
+let COLORS = {
   bg: "#FBF1EC",        // warm blush cream
   ink: "#571F33",       // deep burgundy
   inkSoft: "#9A6478",   // muted mauve
-  plum: "#D64F84",      // rose pink, primary
-  plumDark: "#A93267",  // deep raspberry
-  gold: "#C9A24B",      // gold accent
-  green: "#6BA483",     // sage green day
-  yellow: "#D4A63F",    // gold yellow day
-  red: "#C8354F",       // deep rose red day
+  plum: "#D64F84",      // rose pink, primary (theme accent)
+  plumDark: "#A93267",  // deep raspberry (theme accent, dark)
+  gold: "#C9A24B",      // gold accent (constant across themes)
+  green: "#6BA483",     // sage green day (semantic, constant)
+  yellow: "#D4A63F",    // gold yellow day (semantic, constant)
+  red: "#C8354F",       // deep rose red day (semantic, constant)
   card: "#FFFFFF",
-  line: "#F3D8E0",      // soft pink
-  pill: "#F7E3E9",      // blush chip
+  line: "#F3D8E0",      // soft pink (theme accent, light)
+  pill: "#F7E3E9",      // blush chip (theme accent, lightest)
 };
+
+const THEMES = [
+  { key: "blush", label: "Blush Rose", plum: "#D64F84", plumDark: "#A93267", pill: "#F7E3E9", line: "#F3D8E0" },
+  { key: "berry", label: "Deep Berry", plum: "#8E3B6B", plumDark: "#5C2247", pill: "#EDE0E8", line: "#E5D2E2" },
+  { key: "marigold", label: "Marigold", plum: "#C9862F", plumDark: "#8F5A17", pill: "#F7EAD3", line: "#EFDDBB" },
+  { key: "sage", label: "Sage", plum: "#5F8F6E", plumDark: "#3C6047", pill: "#E3EDE4", line: "#D3E3D6" },
+];
+
+const SKIN_TONES = [
+  { key: "deep", label: "Deep", fill: "#5C3A28", glow: "#7A4E35" },
+  { key: "rich", label: "Rich", fill: "#7A4A2E", glow: "#94603F" },
+  { key: "warm", label: "Warm", fill: "#A9714A", glow: "#BD8961" },
+  { key: "tan", label: "Tan", fill: "#C99368", glow: "#D9AA82" },
+  { key: "light", label: "Light", fill: "#E8B98F", glow: "#F0CBA8" },
+  { key: "porcelain", label: "Porcelain", fill: "#F1D3B4", glow: "#F6E0C8" },
+];
+
+const TEXT_SCALES = [
+  { key: "default", label: "Default", pct: 100 },
+  { key: "large", label: "Large", pct: 115 },
+  { key: "xlarge", label: "Extra large", pct: 130 },
+];
 
 const ENERGY = [
   { key: "green", label: "Green day", desc: "Body is cooperating", color: COLORS.green },
@@ -34,32 +62,49 @@ const DISMISSAL_KEY = "dlyw-dismissal-log";
 const CUSTOM_KEY = "dlyw-custom-terms";
 const TOOLKIT_KEY = "dlyw-benefits";
 
+// Shared limb/head parts render identically in both the front and back views (a body's
+// outline from behind is nearly the same silhouette; only the torso interior differs).
+// Front torso uses the standard clinical abdominal quadrants (RUQ/LUQ/RLQ/LLQ), which also
+// absorb the old separate "pelvis" region, matching how pelvic pain is actually charted.
+// Back torso uses shoulder-blade / lumbar / glute regions instead, since quadrants are an
+// anterior-abdomen convention and don't map onto how back pain is normally described.
 const BODY_MAP = [
-  { k: "head", label: "Head", d: "M50 3 C58 3 63 10 63 18 C63 25 57 30 50 30 C43 30 37 25 37 18 C37 10 42 3 50 3 Z" },
-  { k: "neck", label: "Neck / throat", d: "M45 29 h10 v7 h-10 z" },
-  { k: "shoulderL", label: "Left shoulder", d: "M43 36 C36 37 30 40 26 46 L34 52 C36 45 39 39 43 36 Z" },
-  { k: "shoulderR", label: "Right shoulder", d: "M57 36 C64 37 70 40 74 46 L66 52 C64 45 61 39 57 36 Z" },
-  { k: "chest", label: "Chest", d: "M43 36 h14 C61 40 64 46 65 54 C58 57 42 57 35 54 C36 46 39 40 43 36 Z" },
-  { k: "armL", label: "Left arm", d: "M26 46 C23 55 22 66 22 76 L30 77 C31 67 32 58 34 52 Z" },
-  { k: "armR", label: "Right arm", d: "M74 46 C77 55 78 66 78 76 L70 77 C69 67 68 58 66 52 Z" },
-  { k: "abdomen", label: "Stomach", d: "M35 54 C42 57 58 57 65 54 C65 62 63 68 61 73 h-22 C37 68 35 62 35 54 Z" },
-  { k: "handL", label: "Left hand", d: "M22 76 C19 79 18 85 21 88 C25 89 29 86 30 82 C30 80 30 78 30 77 Z" },
-  { k: "handR", label: "Right hand", d: "M78 76 C81 79 82 85 79 88 C75 89 71 86 70 82 C70 80 70 78 70 77 Z" },
-  { k: "pelvis", label: "Hips / pelvis", d: "M39 73 h22 C65 79 66 87 64 94 C56 97 44 97 36 94 C34 87 35 79 39 73 Z" },
-  { k: "back", label: "Back", d: "M65 54 C67 47 66 41 62 37 C65 45 66 50 66 56 Z" },
-  { k: "legL", label: "Left thigh", d: "M36 94 C43 96 48 96 49 96 C49 105 49 114 48 122 C44 123 40 122 38 121 C36 112 35 103 36 94 Z" },
-  { k: "legR", label: "Right thigh", d: "M64 94 C57 96 52 96 51 96 C51 105 51 114 52 122 C56 123 60 122 62 121 C64 112 65 103 64 94 Z" },
-  { k: "kneeL", label: "Left knee", d: "M38 121 C41 122 45 123 48 122 C48 126 48 129 48 131 C45 132 41 132 39 131 C38 128 38 124 38 121 Z" },
-  { k: "kneeR", label: "Right knee", d: "M62 121 C59 122 55 123 52 122 C52 126 52 129 52 131 C55 132 59 132 61 131 C62 128 62 124 62 121 Z" },
-  { k: "shinL", label: "Left lower leg", d: "M39 131 C42 132 46 132 48 131 C48 141 47 151 46 159 C44 160 41 160 40 159 C39 150 38 140 39 131 Z" },
-  { k: "shinR", label: "Right lower leg", d: "M61 131 C58 132 54 132 52 131 C52 141 53 151 54 159 C56 160 59 160 60 159 C61 150 62 140 61 131 Z" },
-  { k: "footL", label: "Left foot", d: "M40 159 C43 160 45 160 46 159 C47 162 47 165 44 167 C40 167 37 165 37 162 C37 160 38 159 40 159 Z" },
-  { k: "footR", label: "Right foot", d: "M60 159 C57 160 55 160 54 159 C53 162 53 165 56 167 C60 167 63 165 63 162 C63 160 62 159 60 159 Z" },
-  { k: "allOver", label: "All over", d: "" },
-  { k: "joints", label: "Joints everywhere", d: "" },
+  { k: "head", label: "Head", view: "both", d: "M50 3 C58 3 63 10 63 18 C63 25 57 30 50 30 C43 30 37 25 37 18 C37 10 42 3 50 3 Z" },
+  { k: "neck", label: "Neck / throat", view: "both", d: "M45 29 h10 v7 h-10 z" },
+  { k: "shoulderL", label: "Left shoulder", view: "both", d: "M43 36 C36 37 30 40 26 46 L34 52 C36 45 39 39 43 36 Z" },
+  { k: "shoulderR", label: "Right shoulder", view: "both", d: "M57 36 C64 37 70 40 74 46 L66 52 C64 45 61 39 57 36 Z" },
+  { k: "armL", label: "Left arm", view: "both", d: "M26 46 C23 55 22 66 22 76 L30 77 C31 67 32 58 34 52 Z" },
+  { k: "armR", label: "Right arm", view: "both", d: "M74 46 C77 55 78 66 78 76 L70 77 C69 67 68 58 66 52 Z" },
+  { k: "handL", label: "Left hand", view: "both", d: "M22 76 C19 79 18 85 21 88 C25 89 29 86 30 82 C30 80 30 78 30 77 Z" },
+  { k: "handR", label: "Right hand", view: "both", d: "M78 76 C81 79 82 85 79 88 C75 89 71 86 70 82 C70 80 70 78 70 77 Z" },
+  { k: "legL", label: "Left thigh", view: "both", d: "M36 94 C43 96 48 96 49 96 C49 105 49 114 48 122 C44 123 40 122 38 121 C36 112 35 103 36 94 Z" },
+  { k: "legR", label: "Right thigh", view: "both", d: "M64 94 C57 96 52 96 51 96 C51 105 51 114 52 122 C56 123 60 122 62 121 C64 112 65 103 64 94 Z" },
+  { k: "kneeL", label: "Left knee", view: "both", d: "M38 121 C41 122 45 123 48 122 C48 126 48 129 48 131 C45 132 41 132 39 131 C38 128 38 124 38 121 Z" },
+  { k: "kneeR", label: "Right knee", view: "both", d: "M62 121 C59 122 55 123 52 122 C52 126 52 129 52 131 C55 132 59 132 61 131 C62 128 62 124 62 121 Z" },
+  { k: "shinL", label: "Left lower leg", view: "both", d: "M39 131 C42 132 46 132 48 131 C48 141 47 151 46 159 C44 160 41 160 40 159 C39 150 38 140 39 131 Z" },
+  { k: "shinR", label: "Right lower leg", view: "both", d: "M61 131 C58 132 54 132 52 131 C52 141 53 151 54 159 C56 160 59 160 60 159 C61 150 62 140 61 131 Z" },
+  { k: "footL", label: "Left foot", view: "both", d: "M40 159 C43 160 45 160 46 159 C47 162 47 165 44 167 C40 167 37 165 37 162 C37 160 38 159 40 159 Z" },
+  { k: "footR", label: "Right foot", view: "both", d: "M60 159 C57 160 55 160 54 159 C53 162 53 165 56 167 C60 167 63 165 63 162 C63 160 62 159 60 159 Z" },
+  { k: "chest", label: "Chest", view: "front", d: "M43 36 C37 36 34 41 33 46 C32 50 36 53 40 54 h20 C64 53 68 50 67 46 C66 41 63 36 57 36 Z" },
+  { k: "abdomenRUQ", label: "Stomach — right upper quadrant", view: "front", d: "M50 54 L39 54 L42 73 L50 73 Z" },
+  { k: "abdomenLUQ", label: "Stomach — left upper quadrant", view: "front", d: "M50 54 L61 54 L58 73 L50 73 Z" },
+  { k: "abdomenRLQ", label: "Stomach / pelvis — right lower quadrant", view: "front", d: "M50 73 L42 73 L36 94 L50 94 Z" },
+  { k: "abdomenLLQ", label: "Stomach / pelvis — left lower quadrant", view: "front", d: "M50 73 L58 73 L64 94 L50 94 Z" },
+  { k: "upperBackL", label: "Upper back, left (shoulder blade)", view: "back", d: "M50 36 L38 38 C34 43 33 49 36 54 L50 54 Z" },
+  { k: "upperBackR", label: "Upper back, right (shoulder blade)", view: "back", d: "M50 36 L62 38 C66 43 67 49 64 54 L50 54 Z" },
+  { k: "lowerBack", label: "Lower back (lumbar)", view: "back", d: "M39 54 L61 54 L58 73 L42 73 Z" },
+  { k: "glutesL", label: "Left hip / glute", view: "back", d: "M50 73 L42 73 L36 94 L50 94 Z" },
+  { k: "glutesR", label: "Right hip / glute", view: "back", d: "M50 73 L58 73 L64 94 L50 94 Z" },
+  { k: "allOver", label: "All over", view: "both", d: "" },
+  { k: "joints", label: "Joints everywhere", view: "both", d: "" },
 ];
 
-const BODY_OUTLINE = "M50 3 C58 3 63 10 63 18 C63 24 59 28 56 29.5 L55.5 36 C64 37.5 70.5 41 74 46 C77.5 55 78.5 66 78.5 76 C81.5 79 82.5 85 79.5 88 C75.5 89 71 86 70 82 C70 79 69.5 78 69.5 77 C69 67 68 58 66 52.5 C66.5 57 66 62 65 66 C66 73 66.5 86 64 94 C64.5 104 64 113 62 121.5 C62.5 127 62 130 61 131.5 C62 141 62 151 60.5 159.5 C63 161 63.5 164 63 165.5 C60 167.5 55.5 167.5 54 165 C53 162 53.5 160.5 54 159.5 C53 151 52 141 52 131.5 L52 122 C51.5 114 51 105 51 96.5 L49 96.5 C49 105 48.5 114 48 122 L48 131.5 C48 141 47 151 46 159.5 C46.5 160.5 47 162 46 165 C44.5 167.5 40 167.5 37 165.5 C36.5 164 37 161 39.5 159.5 C38 151 38 141 39 131.5 C38 130 37.5 127 38 121.5 C36 113 35.5 104 36 94 C33.5 86 34 73 35 66 C34 62 33.5 57 34 52.5 C32 58 31 67 30.5 77 C30.5 78 30 79 30 82 C29 86 24.5 89 20.5 88 C17.5 85 18.5 79 21.5 76 C21.5 66 22.5 55 26 46 C29.5 41 36 37.5 44.5 36 L44 29.5 C41 28 37 24 37 18 C37 10 42 3 50 3 Z";
+// Pain quality descriptors, paired with location on the body map. This is the same
+// location + quality pairing clinical pain body maps use (PainScale, CHOIR), so the
+// exported summary reads like something a pain specialist or rheumatologist would use.
+const PAIN_QUALITIES = ["Aching", "Burning", "Sharp", "Throbbing", "Stabbing", "Tender", "Numb / tingling"];
+
+const BODY_OUTLINE = "M50 3 C58 3 63 10 63 18 C63 24 59 28 56 29.5 L55.5 36 C64 37.5 70.5 41 74 46 C77.5 55 78.5 66 78.5 76 C81.5 79 82.5 85 79.5 88 C75.5 89 71 86 70 82 C70 79 69.5 78 69.5 77 C69 67 68 58 66 52.5 C64 58 60 62 56 64 C58 72 68 78 67 85 C67 89 66 92 64 94 C64.5 104 64 113 62 121.5 C62.5 127 62 130 61 131.5 C62 141 62 151 60.5 159.5 C63 161 63.5 164 63 165.5 C60 167.5 55.5 167.5 54 165 C53 162 53.5 160.5 54 159.5 C53 151 52 141 52 131.5 L52 122 C51.5 114 51 105 51 96.5 L49 96.5 C49 105 48.5 114 48 122 L48 131.5 C48 141 47 151 46 159.5 C46.5 160.5 47 162 46 165 C44.5 167.5 40 167.5 37 165.5 C36.5 164 37 161 39.5 159.5 C38 151 38 141 39 131.5 C38 130 37.5 127 38 121.5 C36 113 35.5 104 36 94 C34 92 33 89 33 85 C32 78 42 72 44 64 C40 62 36 58 34 52.5 C32 58 31 67 30.5 77 C30.5 78 30 79 30 82 C29 86 24.5 89 20.5 88 C17.5 85 18.5 79 21.5 76 C21.5 66 22.5 55 26 46 C29.5 41 36 37.5 44.5 36 L44 29.5 C41 28 37 24 37 18 C37 10 42 3 50 3 Z";
 
 const SEED_SYMPTOMS = [
   "fatigue", "joint pain", "muscle pain", "brain fog", "headache", "migraine",
@@ -629,7 +674,7 @@ const inputStyle = { border: `1px solid ${COLORS.line}`, background: COLORS.bg, 
 const labelCls = "block text-[13px] font-semibold mb-1.5";
 const cardCls = "rounded-3xl p-6";
 const cardStyle = { background: COLORS.card, border: `1px solid ${COLORS.line}`, boxShadow: "0 2px 14px rgba(87,31,51,0.06)" };
-const GRAD = "linear-gradient(135deg, #D64F84, #A93267)";
+let GRAD = "linear-gradient(135deg, #D64F84, #A93267)";
 
 const store = {
   get(key) {
@@ -680,6 +725,7 @@ export default function Whimsy() {
   const [energy, setEnergy] = useState(null);
   const [pain, setPain] = useState(3);
   const [painAreas, setPainAreas] = useState([]);
+  const [painQuality, setPainQuality] = useState([]);
   const [spoonStart, setSpoonStart] = useState(null);
   const [spoonLeft, setSpoonLeft] = useState(null);
   const [symptoms, setSymptoms] = useState([]);
@@ -723,6 +769,27 @@ export default function Whimsy() {
   const [hxKind, setHxKind] = useState("allergy");
   const [rCopied, setRCopied] = useState(false);
 
+  // appearance preferences
+  const [theme, setTheme] = useState("blush");
+  const [skinTone, setSkinTone] = useState("rich");
+  const [textScale, setTextScale] = useState("default");
+  const [motionOff, setMotionOff] = useState(false);
+
+  // apply the chosen theme by mutating the shared COLORS/GRAD references before
+  // this render's JSX (and every sibling component's JSX) reads them.
+  const activeTheme = THEMES.find((t) => t.key === theme) || THEMES[0];
+  COLORS.plum = activeTheme.plum;
+  COLORS.plumDark = activeTheme.plumDark;
+  COLORS.pill = activeTheme.pill;
+  COLORS.line = activeTheme.line;
+  GRAD = `linear-gradient(135deg, ${activeTheme.plum}, ${activeTheme.plumDark})`;
+  const activeSkin = SKIN_TONES.find((s) => s.key === skinTone) || SKIN_TONES[1];
+  const activeScale = TEXT_SCALES.find((s) => s.key === textScale) || TEXT_SCALES[0];
+
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${activeScale.pct}%`;
+  }, [activeScale.pct]);
+
   const markIntroSeen = () => store.set("dlyw-intro-seen", true);
 
   useEffect(() => {
@@ -746,6 +813,10 @@ export default function Whimsy() {
       if (typeof tk.prepSpecialty === "string") setPrepSpecialty(tk.prepSpecialty);
       setSetupDone(tk.setupDone !== false);
       setRSeen(tk.rSeen === true);
+      if (typeof tk.theme === "string") setTheme(tk.theme);
+      if (typeof tk.skinTone === "string") setSkinTone(tk.skinTone);
+      if (typeof tk.textScale === "string") setTextScale(tk.textScale);
+      if (typeof tk.motionOff === "boolean") setMotionOff(tk.motionOff);
     } else {
       setSetupDone(false);
       setRSeen(false);
@@ -760,11 +831,11 @@ export default function Whimsy() {
       store.set(TOOLKIT_KEY, {
         plan: tPlan, planType: tType, checked: tChecked, consent: rConsent,
         conditions: myConditions, name: myName, medHx, prepNotes, prepSpecialty,
-        setupDone, rSeen,
+        setupDone, rSeen, theme, skinTone, textScale, motionOff,
       });
     }, 600);
     return () => clearTimeout(timer);
-  }, [tPlan, tType, tChecked, rConsent, myConditions, myName, medHx, prepNotes, prepSpecialty, setupDone, rSeen, loaded]);
+  }, [tPlan, tType, tChecked, rConsent, myConditions, myName, medHx, prepNotes, prepSpecialty, setupDone, rSeen, theme, skinTone, textScale, motionOff, loaded]);
 
 
 
@@ -798,6 +869,7 @@ export default function Whimsy() {
       id: Date.now().toString(36),
       date, energy, pain,
       painAreas: [...painAreas],
+      painQuality: [...painQuality],
       spoonStart, spoonLeft,
       symptoms: symptoms.join(", "),
       meds: meds.join(", "),
@@ -808,7 +880,7 @@ export default function Whimsy() {
     const ok = await persist(next);
     setSaveState(ok ? "saved" : "error");
     if (ok) {
-      setEnergy(null); setPain(3); setPainAreas([]); setSpoonStart(null); setSpoonLeft(null); setSymptoms([]); setMeds([]); setTriggers([]); setNotes("");
+      setEnergy(null); setPain(3); setPainAreas([]); setPainQuality([]); setSpoonStart(null); setSpoonLeft(null); setSymptoms([]); setMeds([]); setTriggers([]); setNotes("");
       setDate(todayStr());
       setTimeout(() => setSaveState("idle"), 2200);
     }
@@ -970,6 +1042,7 @@ export default function Whimsy() {
       ...entries.map((e) => {
         const parts = [`${e.date} · ${e.energy.toUpperCase()} · pain ${e.pain}/10`];
         if (e.painAreas && e.painAreas.length) parts.push(`pain areas: ${e.painAreas.map((k) => BODY_MAP.find((b) => b.k === k)?.label).filter(Boolean).join(", ")}`);
+        if (e.painQuality && e.painQuality.length) parts.push(`pain quality: ${e.painQuality.join(", ")}`);
         if (e.spoonStart != null || e.spoonLeft != null) parts.push(`spoons: ${e.spoonStart != null ? e.spoonStart + " start" : ""}${e.spoonStart != null && e.spoonLeft != null ? ", " : ""}${e.spoonLeft != null ? e.spoonLeft + " left" : ""}`);
         if (e.symptoms) parts.push(`symptoms: ${e.symptoms}`);
         if (e.meds) parts.push(`meds: ${e.meds}`);
@@ -1083,6 +1156,7 @@ export default function Whimsy() {
         energy: e.energy,
         pain: e.pain,
         painAreas: e.painAreas || [],
+        painQuality: e.painQuality || [],
         spoonStart: e.spoonStart != null ? e.spoonStart : null,
         spoonLeft: e.spoonLeft != null ? e.spoonLeft : null,
         symptoms: e.symptoms || "",
@@ -1175,7 +1249,7 @@ export default function Whimsy() {
   ];
 
   return (
-    <div style={{ background: "radial-gradient(900px 420px at -10% -5%, #F8DCE4 0%, rgba(248,220,228,0) 60%), radial-gradient(700px 360px at 110% -2%, #F4E4CE 0%, rgba(244,228,206,0) 55%), #FBF1EC", minHeight: "100vh", color: COLORS.ink, fontFamily: BODY }}>
+    <div className={motionOff ? "whimsy-root reduce-motion" : "whimsy-root"} style={{ background: "radial-gradient(900px 420px at -10% -5%, #F8DCE4 0%, rgba(248,220,228,0) 60%), radial-gradient(700px 360px at 110% -2%, #F4E4CE 0%, rgba(244,228,206,0) 55%), #FBF1EC", minHeight: "100vh", color: COLORS.ink, fontFamily: BODY }}>
       <style>{`
         input[type="date"]{-webkit-appearance:none;appearance:none;min-height:44px;}
         input[type="date"]::-webkit-date-and-time-value{text-align:left;}
@@ -1194,6 +1268,7 @@ export default function Whimsy() {
         .whimsy-sway{display:inline-block;animation:sway 4.5s ease-in-out infinite;transform-origin:bottom center;}
         @keyframes sway{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
         @media (prefers-reduced-motion: reduce){.whimsy-float,.whimsy-pop,.wspark,.spoon-btn,.tab-in,.plant,.whimsy-sway,.whimsy-drift,.splash-title,.splash-sub,.splash-sprig,.splash-ring,.pixie,.wingL,.wingR,.splash-fly,.ache{animation:none !important;transition:none !important;}}
+        .reduce-motion .whimsy-float,.reduce-motion .whimsy-pop,.reduce-motion .wspark,.reduce-motion .spoon-btn,.reduce-motion .tab-in,.reduce-motion .plant,.reduce-motion .whimsy-sway,.reduce-motion .whimsy-drift,.reduce-motion .splash-title,.reduce-motion .splash-sub,.reduce-motion .splash-sprig,.reduce-motion .splash-ring,.reduce-motion .pixie,.reduce-motion .wingL,.reduce-motion .wingR,.reduce-motion .splash-fly,.reduce-motion .ache{animation:none !important;transition:none !important;}
         .whimsy-drift{animation:drift 9s ease-in-out infinite alternate;}
         @keyframes drift{from{transform:translateX(0)}to{transform:translateX(-16px)}}
         .splash{animation:splashFade 2.4s ease forwards;}
@@ -1489,12 +1564,25 @@ export default function Whimsy() {
                 <label className={labelCls} style={{ color: COLORS.inkSoft, marginBottom: 0 }}>Where does it hurt?</label>
                 <span className="text-[11px]" style={{ color: COLORS.inkSoft }}>tap where it aches</span>
               </div>
-              <BodyMap selected={painAreas} setSelected={setPainAreas} />
+              <BodyMap selected={painAreas} setSelected={setPainAreas} skin={activeSkin} />
               {painAreas.length > 0 && (
                 <p className="text-xs mt-2 text-center" style={{ color: COLORS.plumDark, fontFamily: SERIF, fontStyle: "italic" }}>
                   {painAreas.map((k) => BODY_MAP.find((b) => b.k === k)?.label).filter(Boolean).join(", ")}
                 </p>
               )}
+              <div className="flex items-baseline justify-between mt-4 mb-1">
+                <label className={labelCls} style={{ color: COLORS.inkSoft, marginBottom: 0 }}>What kind of pain?</label>
+                <span className="text-[11px]" style={{ color: COLORS.inkSoft }}>pick any that fit</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {PAIN_QUALITIES.map((q) => (
+                  <button key={q} onClick={() => setPainQuality(painQuality.includes(q) ? painQuality.filter((x) => x !== q) : [...painQuality, q])}
+                    className="rounded-full px-3.5 py-2 text-xs font-semibold focus:outline-none focus-visible:ring-2"
+                    style={{ background: painQuality.includes(q) ? GRAD : COLORS.pill, color: painQuality.includes(q) ? "#fff" : COLORS.ink }}>
+                    {q}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="mb-6">
@@ -1688,6 +1776,11 @@ export default function Whimsy() {
                           {e.painAreas && e.painAreas.length > 0 && (
                             <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>
                               Pain areas: {e.painAreas.map((k) => BODY_MAP.find((b) => b.k === k)?.label).filter(Boolean).join(", ")}
+                            </p>
+                          )}
+                          {e.painQuality && e.painQuality.length > 0 && (
+                            <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>
+                              Pain quality: {e.painQuality.join(", ")}
                             </p>
                           )}
                           {e.symptoms && <p className="text-xs mt-1" style={{ color: COLORS.inkSoft }}>Symptoms: {e.symptoms}</p>}
@@ -2058,6 +2151,59 @@ export default function Whimsy() {
                   ))}
                 </div>
               )}
+            </ToolCard>
+
+            <GroupLabel>Make it yours</GroupLabel>
+            <ToolCard id="appearance" icon={Sparkles} title="Appearance" subtitle="Colors, skin tone, text size, motion" open={openTool} setOpen={setOpenTool}>
+              <p className="text-sm mb-4" style={{ color: COLORS.inkSoft }}>
+                Why be normal when you can be you? Make Whimsy look and feel like yours.
+              </p>
+
+              <p className={labelCls} style={{ color: COLORS.inkSoft }}>Accent color</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {THEMES.map((t) => (
+                  <button key={t.key} onClick={() => setTheme(t.key)} aria-label={t.label}
+                    className="rounded-full px-3.5 py-2 text-xs font-semibold flex items-center gap-2 focus:outline-none focus-visible:ring-2"
+                    style={{ border: `2px solid ${theme === t.key ? t.plumDark : COLORS.line}`, background: theme === t.key ? t.pill : COLORS.card, color: COLORS.ink }}>
+                    <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ background: `linear-gradient(135deg, ${t.plum}, ${t.plumDark})` }} />
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              <p className={labelCls} style={{ color: COLORS.inkSoft }}>Body map skin tone</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {SKIN_TONES.map((s) => (
+                  <button key={s.key} onClick={() => setSkinTone(s.key)} aria-label={s.label}
+                    className="w-9 h-9 rounded-full focus:outline-none focus-visible:ring-2 flex items-center justify-center"
+                    style={{ background: s.fill, border: skinTone === s.key ? `3px solid ${COLORS.plumDark}` : `1px solid ${COLORS.line}` }}>
+                    {skinTone === s.key && <Check size={14} color="#fff" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,0.5))" }} />}
+                  </button>
+                ))}
+              </div>
+
+              <p className={labelCls} style={{ color: COLORS.inkSoft }}>Text size</p>
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {TEXT_SCALES.map((s) => (
+                  <button key={s.key} onClick={() => setTextScale(s.key)}
+                    className="rounded-2xl py-2.5 text-xs font-bold focus:outline-none focus-visible:ring-2"
+                    style={{ border: `2px solid ${textScale === s.key ? COLORS.plumDark : COLORS.line}`, background: textScale === s.key ? COLORS.pill : COLORS.card, color: COLORS.ink }}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="rounded-2xl p-3.5 flex items-center justify-between" style={{ background: COLORS.bg, border: `1px solid ${COLORS.line}` }}>
+                <div className="pr-3">
+                  <p className="text-sm font-bold">Reduce motion</p>
+                  <p className="text-xs" style={{ color: COLORS.inkSoft }}>Turns off floating, swaying, and growing animations in-app, on top of your device's own motion setting.</p>
+                </div>
+                <button onClick={() => setMotionOff(!motionOff)} aria-label="Toggle reduce motion" aria-pressed={motionOff}
+                  className="shrink-0 rounded-full p-1 focus:outline-none focus-visible:ring-2"
+                  style={{ width: 46, height: 26, background: motionOff ? GRAD : COLORS.line }}>
+                  <span className="block rounded-full bg-white" style={{ width: 18, height: 18, transform: motionOff ? "translateX(20px)" : "translateX(0)", transition: "transform .15s ease" }} />
+                </button>
+              </div>
             </ToolCard>
 
             <GroupLabel>Navigate insurance</GroupLabel>
@@ -2433,36 +2579,48 @@ function GroupLabel({ children, first }) {
   );
 }
 
-function BodyMap({ selected, setSelected }) {
+function BodyMap({ selected, setSelected, skin }) {
+  const [view, setView] = useState("front");
   const toggle = (k) => setSelected(selected.includes(k) ? selected.filter((x) => x !== k) : [...selected, k]);
-  const parts = BODY_MAP.filter((b) => b.d);
+  const viewParts = BODY_MAP.filter((b) => b.d && (b.view === "both" || b.view === view));
   const chips = BODY_MAP.filter((b) => !b.d);
   const allOver = selected.includes("allOver");
-  const jointKeys = ["shoulderL", "shoulderR", "handL", "handR", "kneeL", "kneeR", "pelvis"];
+  const jointKeys = ["shoulderL", "shoulderR", "handL", "handR", "kneeL", "kneeR", "abdomenRLQ", "abdomenLLQ", "glutesL", "glutesR"];
   const joints = selected.includes("joints");
   const isOn = (k) => selected.includes(k) || allOver || (joints && jointKeys.includes(k));
+  const skinFill = skin?.fill || "#C99368";
+  const skinLine = skin?.glow || "#BD8961";
   return (
     <div>
+      <div className="flex items-center justify-center gap-2 mb-2">
+        {["front", "back"].map((v) => (
+          <button key={v} onClick={() => setView(v)}
+            className="rounded-full px-4 py-1.5 text-xs font-bold focus:outline-none focus-visible:ring-2"
+            style={{ background: view === v ? GRAD : COLORS.pill, color: view === v ? "#fff" : COLORS.ink }}>
+            {v === "front" ? "Front" : "Back"}
+          </button>
+        ))}
+      </div>
       <div className="rounded-3xl py-3 flex justify-center relative overflow-hidden"
         style={{ background: "radial-gradient(130px 165px at 50% 48%, #FEF8FA 0%, #FBF1EC 100%)", border: `1px solid ${COLORS.line}` }}>
         <span className="whimsy-sway absolute" style={{ left: 12, bottom: 6, opacity: 0.3 }}><Sprig size={22} /></span>
         <span className="whimsy-float absolute" style={{ right: 14, top: 8, opacity: 0.5 }}><Sparkles size={13} style={{ color: COLORS.gold }} /></span>
-        <svg width="126" height="205" viewBox="14 -1 72 172" aria-label="Body map. Tap where it aches.">
-          <path d={BODY_OUTLINE} fill="#FBE7EC" stroke="none" />
-          {parts.map((b) => {
+        <svg width="126" height="205" viewBox="14 -1 72 172" aria-label={`Body map, ${view} view. Tap where it aches.`}>
+          <path d={BODY_OUTLINE} fill={skinFill} stroke="none" />
+          {viewParts.map((b) => {
             const on = isOn(b.k);
             return (
               <path key={b.k} d={b.d} onClick={() => toggle(b.k)} aria-label={b.label}
                 className="bodypart"
                 fill={on ? COLORS.plum : "transparent"}
-                stroke={on ? COLORS.plumDark : "#F0CFD9"}
+                stroke={on ? COLORS.plumDark : skinLine}
                 strokeWidth={on ? 0.9 : 0.5} strokeLinejoin="round" />
             );
           })}
-          {parts.filter((b) => isOn(b.k)).map((b) => (
+          {viewParts.filter((b) => isOn(b.k)).map((b) => (
             <path key={b.k + "-glow"} d={b.d} fill="none" stroke={COLORS.plum} strokeWidth="2.6" opacity="0.3" className="ache" style={{ pointerEvents: "none" }} />
           ))}
-          <path d={BODY_OUTLINE} fill="none" stroke="#DFA6BA" strokeWidth="1.3" strokeLinejoin="round" style={{ pointerEvents: "none" }} />
+          <path d={BODY_OUTLINE} fill="none" stroke={skinLine} strokeWidth="1.3" strokeLinejoin="round" style={{ pointerEvents: "none" }} />
         </svg>
       </div>
       <div className="flex flex-wrap gap-1.5 mt-2.5">
