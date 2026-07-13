@@ -2884,7 +2884,15 @@ function getHairOverlay(styleKey, hairColor) {
     scalp.push(
       <path key="scalp-base"
         d="M37.4 13.5 C37.6 7.6 43 2.3 50 2.3 C57 2.3 62.4 7.6 62.6 13.5 C62.7 16.3 61.9 18.9 60.4 20.8 C60.7 15.8 59 10.5 55 7.8 C51.9 9.5 48.1 9.5 45 7.8 C41 10.5 39.3 15.8 39.6 20.8 C38.1 18.9 37.3 16.3 37.4 13.5 Z"
-        fill={hairColor} opacity="0.55" />
+        fill={hairColor} opacity="0.55" />,
+      // "edges": small laid baby-hair swirls right at the hairline, at the center part and
+      // both temples, the way edges get gelled down and curled rather than left loose.
+      <path key="edge-center" d="M48.3 7.6 Q49.8 6 51.4 7.3 Q51.6 8.5 50.4 9 Q49 9.2 48.5 8.3 Q48.2 7.9 48.3 7.6 Z"
+        fill={hairColor} opacity="0.85" />,
+      <path key="edge-l" d="M39.3 12.8 Q37 14 37.7 16.6 Q39 17 39.8 15.6 Q40.3 14.3 39.9 13.2 Q39.6 12.8 39.3 12.8 Z"
+        fill={hairColor} opacity="0.85" />,
+      <path key="edge-r" d="M60.7 12.8 Q63 14 62.3 16.6 Q61 17 60.2 15.6 Q59.7 14.3 60.1 13.2 Q60.4 12.8 60.7 12.8 Z"
+        fill={hairColor} opacity="0.85" />
     );
   }
   switch (styleKey) {
@@ -3032,19 +3040,31 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, onOpenAppearan
                   <path d="M43.5 11.6 Q45.4 10.7 47.4 11.4" fill="none" stroke={COLORS.plumDark} strokeWidth="0.45" strokeLinecap="round" />
                   <path d="M52.6 11.4 Q54.6 10.7 56.5 11.6" fill="none" stroke={COLORS.plumDark} strokeWidth="0.45" strokeLinecap="round" />
                 </g>
-                {/* almond eyes: a lid outline plus a small iris, like a painted mannequin eye rather than a cartoon dot */}
+                {/* actual open eyes: lid outline with a visible white, iris, pupil and glint, not just a dot */}
                 <g>
-                  <path d="M43.6 14 Q45.4 12.6 47.2 14 Q45.4 15 43.6 14 Z" fill="none" stroke={COLORS.plumDark} strokeWidth="0.4" opacity="0.7" />
-                  <path d="M52.8 14 Q54.6 12.6 56.4 14 Q54.6 15 52.8 14 Z" fill="none" stroke={COLORS.plumDark} strokeWidth="0.4" opacity="0.7" />
-                  <ellipse cx="45.4" cy="14" rx="0.75" ry="0.75" fill={COLORS.plumDark} opacity="0.75" />
-                  <ellipse cx="54.6" cy="14" rx="0.75" ry="0.75" fill={COLORS.plumDark} opacity="0.75" />
+                  <path d="M43.2 13.9 Q45.4 12.1 47.6 13.9 Q45.4 15.3 43.2 13.9 Z" fill="#FFF9F4" opacity="0.9" />
+                  <path d="M43.2 13.9 Q45.4 12.1 47.6 13.9 Q45.4 15.3 43.2 13.9 Z" fill="none" stroke={COLORS.plumDark} strokeWidth="0.45" opacity="0.75" />
+                  <path d="M52.4 13.9 Q54.6 12.1 56.8 13.9 Q54.6 15.3 52.4 13.9 Z" fill="#FFF9F4" opacity="0.9" />
+                  <path d="M52.4 13.9 Q54.6 12.1 56.8 13.9 Q54.6 15.3 52.4 13.9 Z" fill="none" stroke={COLORS.plumDark} strokeWidth="0.45" opacity="0.75" />
+                  <circle cx="45.4" cy="14" r="1" fill={COLORS.plumDark} opacity="0.85" />
+                  <circle cx="54.6" cy="14" r="1" fill={COLORS.plumDark} opacity="0.85" />
+                  <circle cx="45.4" cy="14" r="0.45" fill="#2A1620" opacity="0.9" />
+                  <circle cx="54.6" cy="14" r="0.45" fill="#2A1620" opacity="0.9" />
+                  <circle cx="45.7" cy="13.6" r="0.22" fill="#fff" opacity="0.95" />
+                  <circle cx="54.9" cy="13.6" r="0.22" fill="#fff" opacity="0.95" />
                   <path d="M46.9 13 L47.8 12.1" stroke={COLORS.plumDark} strokeWidth="0.4" strokeLinecap="round" opacity="0.55" />
                   <path d="M53.1 13 L52.2 12.1" stroke={COLORS.plumDark} strokeWidth="0.4" strokeLinecap="round" opacity="0.55" />
                 </g>
                 {/* nose: a simple down-stroke with a soft tip */}
                 <path d="M49.7 15.2 Q49.2 17.3 49.5 18.2 Q50 18.6 50.5 18.2" fill="none" stroke={skinLine} strokeWidth="0.55" strokeLinecap="round" opacity="0.75" />
-                {/* neutral closed mouth, resting expression rather than a smile */}
-                <path d="M46 19.6 Q50 20.4 54 19.6" fill="none" stroke={COLORS.plumDark} strokeWidth="0.6" strokeLinecap="round" opacity="0.6" />
+                {/* full lips: an upper lip with a cupid's bow and a fuller rounded lower lip, both filled */}
+                <g>
+                  <path d="M45.3 19.3 Q47.6 18.2 49 19.1 L50 18.8 L51 19.1 Q52.4 18.2 54.7 19.3 Q50 20 45.3 19.3 Z"
+                    fill={COLORS.plum} opacity="0.55" stroke={COLORS.plumDark} strokeWidth="0.3" />
+                  <path d="M45.3 19.3 Q50 22.3 54.7 19.3 Q50 21.1 45.3 19.3 Z"
+                    fill={COLORS.plum} opacity="0.7" stroke={COLORS.plumDark} strokeWidth="0.35" />
+                  <path d="M45.3 19.3 L54.7 19.3" stroke={COLORS.plumDark} strokeWidth="0.35" opacity="0.5" />
+                </g>
                 {/* collarbone hint just below the neck */}
                 <path d="M40 38.5 Q50 41 60 38.5" fill="none" stroke={skinLine} strokeWidth="0.5" opacity="0.35" />
                 {/* fuller, rounder bust with an underbust curve, set into the chest rather than floating on it */}
