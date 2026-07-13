@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Sparkles, Trash2, Copy, Check, NotebookPen, TrendingUp, FileText, Scale, Heart, Download, Upload, BookOpen, ChevronDown, ChevronUp, Leaf, Shield, Search, Library, FlaskConical, CalendarCheck, Soup, Flower2, Camera } from "lucide-react";
+import { X, Sparkles, Trash2, Copy, Check, NotebookPen, TrendingUp, FileText, Scale, Heart, Download, Upload, BookOpen, ChevronDown, ChevronUp, Leaf, Shield, Search, Library, FlaskConical, CalendarCheck, Soup, Flower2, Camera, Palette } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 // Whimsy, by Don't Lose Your Whimsy
@@ -1732,7 +1732,8 @@ export default function Whimsy() {
                 <label className={labelCls} style={{ color: COLORS.inkSoft, marginBottom: 0 }}>Where does it hurt?</label>
                 <span className="text-[11px]" style={{ color: COLORS.inkSoft }}>tap where it aches</span>
               </div>
-              <BodyMap selected={painAreas} setSelected={setPainAreas} skin={activeSkin} />
+              <BodyMap selected={painAreas} setSelected={setPainAreas} skin={activeSkin}
+                onOpenAppearance={() => { setTab("toolkit"); setOpenTool("appearance"); }} />
               {painAreas.length > 0 && (
                 <p className="text-xs mt-2 text-center" style={{ color: COLORS.plumDark, fontFamily: SERIF, fontStyle: "italic" }}>
                   {painAreas.map((k) => BODY_MAP.find((b) => b.k === k)?.label).filter(Boolean).join(", ")}
@@ -2815,7 +2816,7 @@ function GroupLabel({ children, first }) {
   );
 }
 
-function BodyMap({ selected, setSelected, skin }) {
+function BodyMap({ selected, setSelected, skin, onOpenAppearance }) {
   const [view, setView] = useState("front");
   const toggle = (k) => setSelected(selected.includes(k) ? selected.filter((x) => x !== k) : [...selected, k]);
   const viewParts = BODY_MAP.filter((b) => b.d && (b.view === "both" || b.view === view));
@@ -2836,6 +2837,14 @@ function BodyMap({ selected, setSelected, skin }) {
             {v === "front" ? "Front" : "Back"}
           </button>
         ))}
+        {onOpenAppearance && (
+          <button onClick={onOpenAppearance} aria-label="Change colors and appearance"
+            title="Change colors and appearance"
+            className="rounded-full w-7 h-7 flex items-center justify-center focus:outline-none focus-visible:ring-2"
+            style={{ background: COLORS.pill, color: COLORS.plumDark, border: `1px solid ${COLORS.line}` }}>
+            <Palette size={13} />
+          </button>
+        )}
       </div>
       <div className="rounded-3xl py-3 flex justify-center relative overflow-hidden"
         style={{ background: "radial-gradient(130px 165px at 50% 48%, #FEF8FA 0%, #FBF1EC 100%)", border: `1px solid ${COLORS.line}` }}>
@@ -2859,8 +2868,28 @@ function BodyMap({ selected, setSelected, skin }) {
             <path key={b.k + "-glow"} d={b.d} fill="none" stroke={COLORS.plum} strokeWidth="2.6" opacity="0.3" className="ache" style={{ pointerEvents: "none" }} />
           ))}
           <path d={BODY_OUTLINE} fill="none" stroke={skinLine} strokeWidth="1.3" strokeLinejoin="round" style={{ pointerEvents: "none" }} />
+          {view === "front" ? (
+            <g style={{ pointerEvents: "none" }} opacity="0.6">
+              <circle cx="45.5" cy="13.5" r="1.1" fill={COLORS.plumDark} />
+              <circle cx="54.5" cy="13.5" r="1.1" fill={COLORS.plumDark} />
+              <path d="M45 19 Q50 22.5 55 19" fill="none" stroke={COLORS.plumDark} strokeWidth="1" strokeLinecap="round" />
+              <path d="M40 41 Q44 47.5 48.5 42.5" fill="none" stroke={skinLine} strokeWidth="0.6" opacity="0.85" strokeLinecap="round" />
+              <path d="M51.5 42.5 Q56 47.5 60 41" fill="none" stroke={skinLine} strokeWidth="0.6" opacity="0.85" strokeLinecap="round" />
+            </g>
+          ) : (
+            <g style={{ pointerEvents: "none" }}>
+              <path d="M37 11 C37 5 43 2 50 2 C57 2 63 5 63 11 C63 15 61 18 58 19 C58.5 13.5 55 9.5 50 9.5 C45 9.5 41.5 13.5 42 19 C39 18 37 15 37 11 Z"
+                fill={skinLine} opacity="0.55" />
+              <path d="M50 36 L50 73" stroke={skinLine} strokeWidth="0.6" opacity="0.55" strokeDasharray="1.2 2" />
+              <path d="M40 40 Q46 46 42 54" fill="none" stroke={skinLine} strokeWidth="0.5" opacity="0.45" />
+              <path d="M60 40 Q54 46 58 54" fill="none" stroke={skinLine} strokeWidth="0.5" opacity="0.45" />
+            </g>
+          )}
         </svg>
       </div>
+      <p className="text-center text-[0.68rem] mt-1.5 italic" style={{ color: COLORS.inkSoft }}>
+        {view === "front" ? "Facing you" : "Facing away from you"}
+      </p>
       <div className="flex flex-wrap gap-1.5 mt-2.5">
         {chips.map((b) => (
           <button key={b.k} onClick={() => toggle(b.k)}
