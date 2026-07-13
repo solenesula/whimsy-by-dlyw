@@ -37,6 +37,7 @@ const THEMES = [
 ];
 
 const SKIN_TONES = [
+  { key: "blush", label: "Blush (default)", fill: "#F6D9DE", glow: "#DFA6BA" },
   { key: "deep", label: "Deep", fill: "#5C3A28", glow: "#7A4E35" },
   { key: "rich", label: "Rich", fill: "#7A4A2E", glow: "#94603F" },
   { key: "warm", label: "Warm", fill: "#A9714A", glow: "#BD8961" },
@@ -634,6 +635,17 @@ const PREP_PHRASES = [
   '"I\'ve been tracking my symptoms. Here\'s my summary."',
 ];
 
+// Scripts for the specific dismissal patterns most reported by Black women and other
+// people whose pain is routinely minimized: named directly, not just "advocate for yourself."
+const BIAS_PHRASES = [
+  '"I understand anxiety is on the table, but I\'d like the physical causes ruled out first, in writing."',
+  '"My weight isn\'t the only explanation here. What would you check if I weren\'t overweight?"',
+  '"I\'m in pain now. What can we do today, and what\'s the plan if this medication isn\'t enough?"',
+  '"My labs being normal doesn\'t match how I feel day to day. Can we look at what test would actually explain my symptoms?"',
+  '"I want to slow down for a moment; I don\'t feel heard yet. Can you say back what you understood me to say?"',
+  '"For the record, I am reporting [symptom] as new/worsening today, so it\'s documented regardless of what we decide to do about it."',
+];
+
 const CHEERS = [
   "You showed up for yourself today.",
   "Your body's story is on the record.",
@@ -737,6 +749,7 @@ export default function Whimsy() {
   // care record (trail)
   const [dismissals, setDismissals] = useState([]);
   const [dCopied, setDCopied] = useState(false);
+  const [appealCopiedId, setAppealCopiedId] = useState(null);
   const [dSaveState, setDSaveState] = useState("idle");
   const [dMore, setDMore] = useState(false);
   const [dType, setDType] = useState("dismissed");
@@ -771,7 +784,7 @@ export default function Whimsy() {
 
   // appearance preferences
   const [theme, setTheme] = useState("blush");
-  const [skinTone, setSkinTone] = useState("rich");
+  const [skinTone, setSkinTone] = useState("blush");
   const [textScale, setTextScale] = useState("default");
   const [motionOff, setMotionOff] = useState(false);
 
@@ -783,7 +796,7 @@ export default function Whimsy() {
   COLORS.pill = activeTheme.pill;
   COLORS.line = activeTheme.line;
   GRAD = `linear-gradient(135deg, ${activeTheme.plum}, ${activeTheme.plumDark})`;
-  const activeSkin = SKIN_TONES.find((s) => s.key === skinTone) || SKIN_TONES[1];
+  const activeSkin = SKIN_TONES.find((s) => s.key === skinTone) || SKIN_TONES[0];
   const activeScale = TEXT_SCALES.find((s) => s.key === textScale) || TEXT_SCALES[0];
 
   useEffect(() => {
@@ -885,6 +898,28 @@ export default function Whimsy() {
       setTimeout(() => setSaveState("idle"), 2200);
     }
   };
+
+  // Backdating support: switching the check-in date loads that day's existing entry into
+  // the form (so it can be corrected, not just deleted-and-redone), or clears the form for
+  // a fresh entry if that day hasn't been logged yet.
+  const loadOrResetForDate = (d) => {
+    const existing = entries.find((e) => e.date === d);
+    if (existing) {
+      setEnergy(existing.energy);
+      setPain(existing.pain);
+      setPainAreas(existing.painAreas || []);
+      setPainQuality(existing.painQuality || []);
+      setSpoonStart(existing.spoonStart != null ? existing.spoonStart : null);
+      setSpoonLeft(existing.spoonLeft != null ? existing.spoonLeft : null);
+      setSymptoms(existing.symptoms ? existing.symptoms.split(", ").filter(Boolean) : []);
+      setMeds(existing.meds ? existing.meds.split(", ").filter(Boolean) : []);
+      setTriggers(existing.triggers ? existing.triggers.split(", ").filter(Boolean) : []);
+      setNotes(existing.notes || "");
+    } else {
+      setEnergy(null); setPain(3); setPainAreas([]); setPainQuality([]); setSpoonStart(null); setSpoonLeft(null); setSymptoms([]); setMeds([]); setTriggers([]); setNotes("");
+    }
+  };
+  const handleDateChange = (d) => { setDate(d); loadOrResetForDate(d); };
 
   const deleteEntry = async (id) => {
     await persist(entries.filter((e) => e.id !== id));
@@ -1126,6 +1161,44 @@ export default function Whimsy() {
     }
     lines.push("Logged with Whimsy, the Don't Lose Your Whimsy app.");
     return lines.join("\n");
+  };
+
+  // Assembles an appeal draft from a single dismissal receipt, plus the plan-appropriate
+  // appeal rights already sitting in the Toolkit playbooks, so documenting the dismissal
+  // and acting on it are one motion instead of two.
+  const buildAppealText = (d) => {
+    const lines = [];
+    lines.push(`Re: Appeal of care denial / dismissal — ${d.date}`);
+    lines.push("");
+    lines.push(`I am writing to appeal the outcome of my ${d.setting ? d.setting.toLowerCase() : "visit"}${d.specialty ? " (" + d.specialty + ")" : ""} on ${fmtDateLong(d.date)}${d.facility ? " at " + d.facility : ""}${d.provider ? " with " + d.provider : ""}.`);
+    lines.push("");
+    if (d.reported) lines.push(`What I reported: ${d.reported}`);
+    if (d.said) lines.push(`What I was told: "${d.said}"`);
+    if (d.declined) lines.push(`What was declined or refused: ${d.declined}`);
+    if (myConditions.length) lines.push(`Relevant conditions on record: ${myConditions.join(", ")}`);
+    if (medHx.length) lines.push(`Documented allergies/failed treatments: ${medHx.map((m) => m.med).join(", ")}`);
+    lines.push("");
+    const section = effType && PLAYBOOKS[effType] && PLAYBOOKS[effType].find((s) => /when they say no/i.test(s.h));
+    if (section) {
+      lines.push(`Under my plan (${tPlan || TYPE_LABELS[effType] || effType}), my appeal rights include:`);
+      section.pts.forEach((p) => lines.push(`- ${p}`));
+      lines.push("");
+    }
+    lines.push("I am requesting a full review of this decision and ask that my medical record, including the documentation above, be considered as part of that review.");
+    lines.push("");
+    lines.push("Sincerely,");
+    lines.push(myName || "[your name]");
+    return lines.join("\n");
+  };
+
+  const copyAppeal = async (d) => {
+    try {
+      await navigator.clipboard.writeText(buildAppealText(d));
+      setAppealCopiedId(d.id);
+      setTimeout(() => setAppealCopiedId(null), 2200);
+    } catch (e) {
+      console.error("Copy failed", e);
+    }
   };
 
   const copyTrail = async () => {
@@ -1519,6 +1592,23 @@ export default function Whimsy() {
               )}
             </div>
 
+            <div className="flex flex-wrap items-center gap-2 mb-5">
+              <input type="date" value={date} max={todayStr()} onChange={(e) => e.target.value && handleDateChange(e.target.value)}
+                aria-label="Logging for date"
+                className="rounded-full px-3.5 py-2 text-xs font-semibold focus:outline-none focus-visible:ring-2"
+                style={{ border: `1px solid ${COLORS.line}`, background: COLORS.bg, color: COLORS.ink }} />
+              {date !== todayStr() && (
+                <button onClick={() => handleDateChange(todayStr())} className="text-xs font-bold focus:outline-none focus-visible:ring-2" style={{ color: COLORS.plumDark }}>
+                  Back to today
+                </button>
+              )}
+              {entries.some((e) => e.date === date) && (
+                <span className="rounded-full px-3 py-1.5 text-[11px] font-bold" style={{ background: COLORS.pill, color: COLORS.plumDark }}>
+                  Editing your saved entry — changes replace it
+                </span>
+              )}
+            </div>
+
             <div className="grid grid-cols-3 gap-2 mb-6">
               {ENERGY.map((lvl) => {
                 const on = energy === lvl.key;
@@ -1788,10 +1878,16 @@ export default function Whimsy() {
                           {e.triggers && <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>Triggers: {e.triggers}</p>}
                           {e.notes && <p className="text-xs mt-0.5 italic" style={{ color: COLORS.inkSoft }}>"{e.notes}"</p>}
                         </div>
-                        <button onClick={() => deleteEntry(e.id)} aria-label="Delete entry"
-                          className="shrink-0 p-2 rounded-lg focus:outline-none focus-visible:ring-2" style={{ color: COLORS.inkSoft }}>
-                          <Trash2 size={16} />
-                        </button>
+                        <div className="flex flex-col gap-1 shrink-0">
+                          <button onClick={() => { handleDateChange(e.date); setTab("today"); }} aria-label="Edit entry"
+                            className="p-2 rounded-lg focus:outline-none focus-visible:ring-2" style={{ color: COLORS.plumDark }}>
+                            <NotebookPen size={16} />
+                          </button>
+                          <button onClick={() => deleteEntry(e.id)} aria-label="Delete entry"
+                            className="p-2 rounded-lg focus:outline-none focus-visible:ring-2" style={{ color: COLORS.inkSoft }}>
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -2005,6 +2101,13 @@ export default function Whimsy() {
                         <Trash2 size={16} />
                       </button>
                       </div>
+                      {d.type !== "believed" && (
+                        <button onClick={() => copyAppeal(d)}
+                          className="w-full mt-2 rounded-full py-2.5 text-xs font-bold text-white focus:outline-none focus-visible:ring-2 flex items-center justify-center gap-1.5"
+                          style={{ background: appealCopiedId === d.id ? COLORS.green : GRAD }}>
+                          {appealCopiedId === d.id ? <><Check size={14} /> Appeal copied</> : <><Copy size={14} /> Draft an appeal</>}
+                        </button>
+                      )}
                       <div className="mt-2 pt-2 text-center" style={{ borderTop: `1px dashed ${COLORS.line}` }}>
                         <p className="text-[11px]" style={{ fontFamily: SERIF, fontStyle: "italic", color: d.type === "believed" ? COLORS.green : COLORS.plumDark }}>
                           {d.type === "believed" ? "a keeper ♡" : "kept. on the record."}
@@ -2337,6 +2440,16 @@ export default function Whimsy() {
                 ))}
               </div>
 
+              <p className={labelCls} style={{ color: COLORS.inkSoft }}>When you're being dismissed, specifically</p>
+              <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>
+                For the patterns reported most: told it's anxiety, told it's your weight, pain not taken seriously, or "your labs are normal."
+              </p>
+              <div className="space-y-1.5 mb-3">
+                {BIAS_PHRASES.map((p) => (
+                  <p key={p} className="text-sm rounded-2xl px-3.5 py-2.5" style={{ background: "#FDF4F0", border: "1px solid #E8B7C6", color: COLORS.ink }}>{p}</p>
+                ))}
+              </div>
+
               <div className="rounded-2xl p-3.5 mb-3" style={{ background: COLORS.bg, border: `1px solid ${COLORS.line}` }}>
                 <p className="text-sm font-bold mb-2" style={{ color: COLORS.ink }}>Build my visit plan</p>
                 <div className="mb-3">
@@ -2588,8 +2701,8 @@ function BodyMap({ selected, setSelected, skin }) {
   const jointKeys = ["shoulderL", "shoulderR", "handL", "handR", "kneeL", "kneeR", "abdomenRLQ", "abdomenLLQ", "glutesL", "glutesR"];
   const joints = selected.includes("joints");
   const isOn = (k) => selected.includes(k) || allOver || (joints && jointKeys.includes(k));
-  const skinFill = skin?.fill || "#C99368";
-  const skinLine = skin?.glow || "#BD8961";
+  const skinFill = skin?.fill || "#F6D9DE";
+  const skinLine = skin?.glow || "#DFA6BA";
   return (
     <div>
       <div className="flex items-center justify-center gap-2 mb-2">
