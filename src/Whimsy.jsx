@@ -2869,13 +2869,24 @@ function GroupLabel({ children, first }) {
   );
 }
 
-// Renders the chosen hairstyle as two layers: "behind" paints before the head silhouette
-// (so it can flare out past the head's edge, like an afro halo), "above" paints after (so it
-// sits on top of the scalp, like a puff, buns, or a headwrap). Same shapes serve both the
-// front and back views so a style stays recognizable no matter which way the body is turned.
+// Renders the chosen hairstyle as three layers: "behind" paints before the head silhouette
+// (so it can flare out past the head's edge, like an afro halo); "scalp" paints on top of the
+// skin but underneath the face, a low natural hairline covering the crown so every style (other
+// than bald) reads as hair sitting on a head, not a shape floating above bare scalp; "above"
+// paints last, on top of everything, for the part of a style that builds up off that scalp hair
+// (a gathered puff, buns, a ponytail, braids, locs, a wrap). Same shapes serve both the front
+// and back views so a style stays recognizable no matter which way the body is turned.
 function getHairOverlay(styleKey, hairColor) {
   const behind = [];
+  const scalp = [];
   const above = [];
+  if (styleKey !== "bald") {
+    scalp.push(
+      <path key="scalp-base"
+        d="M37.4 13.5 C37.6 7.6 43 2.3 50 2.3 C57 2.3 62.4 7.6 62.6 13.5 C62.7 16.3 61.9 18.9 60.4 20.8 C60.7 15.8 59 10.5 55 7.8 C51.9 9.5 48.1 9.5 45 7.8 C41 10.5 39.3 15.8 39.6 20.8 C38.1 18.9 37.3 16.3 37.4 13.5 Z"
+        fill={hairColor} opacity="0.55" />
+    );
+  }
   switch (styleKey) {
     case "afro":
       behind.push(
@@ -2887,8 +2898,10 @@ function getHairOverlay(styleKey, hairColor) {
       break;
     case "puff":
       above.push(
-        <ellipse key="puff" cx="50" cy="0.5" rx="7.5" ry="6" fill={hairColor} opacity="0.6" />,
-        <path key="puff-band" d="M43 6 Q50 8.2 57 6" stroke={hairColor} strokeWidth="1.3" fill="none" opacity="0.75" strokeLinecap="round" />
+        <path key="puff-gather" d="M42.5 9 Q42 5 45.5 2.5 Q50 0.8 54.5 2.5 Q58 5 57.5 9 Q56 6.5 50 6.2 Q44 6.5 42.5 9 Z"
+          fill={hairColor} opacity="0.35" />,
+        <ellipse key="puff" cx="50" cy="0.5" rx="7.5" ry="6" fill={hairColor} opacity="0.65" />,
+        <path key="puff-band" d="M42.5 6.5 Q50 9 57.5 6.5" stroke={hairColor} strokeWidth="1.4" fill="none" opacity="0.85" strokeLinecap="round" />
       );
       break;
     case "spacebuns":
@@ -2947,7 +2960,7 @@ function getHairOverlay(styleKey, hairColor) {
     default:
       break;
   }
-  return { behind, above };
+  return { behind, scalp, above };
 }
 
 function BodyMap({ selected, setSelected, skin, shape, hairStyle, onOpenAppearance }) {
@@ -3006,6 +3019,7 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, onOpenAppearan
               <path key={b.k + "-glow"} d={b.d} fill="none" stroke={COLORS.plum} strokeWidth="2.6" opacity="0.3" className="ache" style={{ pointerEvents: "none" }} />
             ))}
             <path d={BODY_OUTLINE} fill="none" stroke={skinLine} strokeWidth="1.3" strokeLinejoin="round" style={{ pointerEvents: "none" }} />
+            <g style={{ pointerEvents: "none" }}>{hair.scalp}</g>
             {view === "front" ? (
               <g style={{ pointerEvents: "none" }}>
                 {/* faint cheekbone/jaw contour, so the head reads as sculpted rather than flat */}
