@@ -3008,34 +3008,36 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, onOpenAppearan
             <path d={BODY_OUTLINE} fill="none" stroke={skinLine} strokeWidth="1.3" strokeLinejoin="round" style={{ pointerEvents: "none" }} />
             {view === "front" ? (
               <g style={{ pointerEvents: "none" }}>
-                <g opacity="0.7">
-                  <path d="M42.8 11 Q45.3 9.2 48 10.7" fill="none" stroke={COLORS.plumDark} strokeWidth="0.8" strokeLinecap="round" />
-                  <path d="M52 10.7 Q54.7 9.2 57.2 11" fill="none" stroke={COLORS.plumDark} strokeWidth="0.8" strokeLinecap="round" />
+                {/* soft arched brows */}
+                <g opacity="0.6">
+                  <path d="M43.2 11.3 Q45.3 10 47.6 11.1" fill="none" stroke={COLORS.plumDark} strokeWidth="0.6" strokeLinecap="round" />
+                  <path d="M52.4 11.1 Q54.7 10 56.8 11.3" fill="none" stroke={COLORS.plumDark} strokeWidth="0.6" strokeLinecap="round" />
                 </g>
-                {/* big, round, lashed eyes with a little shine, like a cute stylized avatar */}
+                {/* smaller, more natural almond eyes with a short lash flick and a glint */}
                 <g>
-                  <ellipse cx="45.3" cy="14.5" rx="1.7" ry="1.9" fill={COLORS.plumDark} opacity="0.85" />
-                  <ellipse cx="54.7" cy="14.5" rx="1.7" ry="1.9" fill={COLORS.plumDark} opacity="0.85" />
-                  <circle cx="45.9" cy="13.6" r="0.55" fill="#fff" opacity="0.9" />
-                  <circle cx="55.3" cy="13.6" r="0.55" fill="#fff" opacity="0.9" />
-                  <g stroke={COLORS.plumDark} strokeWidth="0.55" strokeLinecap="round" opacity="0.8">
-                    <path d="M43.6 12.6 L42.6 11.5" />
-                    <path d="M44.4 12.1 L43.7 10.8" />
-                    <path d="M45.3 12 L45.1 10.6" />
-                    <path d="M56.4 12.6 L57.4 11.5" />
-                    <path d="M55.6 12.1 L56.3 10.8" />
-                    <path d="M54.7 12 L54.9 10.6" />
+                  <ellipse cx="45.4" cy="14.2" rx="1.3" ry="1" fill={COLORS.plumDark} opacity="0.8" />
+                  <ellipse cx="54.6" cy="14.2" rx="1.3" ry="1" fill={COLORS.plumDark} opacity="0.8" />
+                  <circle cx="45.8" cy="13.7" r="0.32" fill="#fff" opacity="0.85" />
+                  <circle cx="55" cy="13.7" r="0.32" fill="#fff" opacity="0.85" />
+                  <g stroke={COLORS.plumDark} strokeWidth="0.45" strokeLinecap="round" opacity="0.65">
+                    <path d="M44.2 13.2 L43.5 12.3" />
+                    <path d="M45 12.9 L44.6 11.9" />
+                    <path d="M55.8 13.2 L56.5 12.3" />
+                    <path d="M55 12.9 L55.4 11.9" />
                   </g>
                 </g>
-                {/* rosy cheeks */}
-                <g opacity="0.35">
-                  <ellipse cx="41.5" cy="18.5" rx="2.6" ry="1.7" fill={COLORS.plum} />
-                  <ellipse cx="58.5" cy="18.5" rx="2.6" ry="1.7" fill={COLORS.plum} />
+                {/* nose: a simple down-stroke with a soft tip, not just two dots */}
+                <path d="M49.7 15.2 Q49.2 17.3 49.5 18.2 Q50 18.6 50.5 18.2" fill="none" stroke={skinLine} strokeWidth="0.55" strokeLinecap="round" opacity="0.75" />
+                {/* rosy cheeks, set back further from the eyes */}
+                <g opacity="0.25">
+                  <ellipse cx="41.5" cy="19" rx="2.4" ry="1.5" fill={COLORS.plum} />
+                  <ellipse cx="58.5" cy="19" rx="2.4" ry="1.5" fill={COLORS.plum} />
                 </g>
-                <path d="M45 19.2 Q50 22.8 55 19.2 Q50 21.3 45 19.2 Z" fill={COLORS.plumDark} opacity="0.45" />
-                <path d="M45 19 Q47.5 17.8 50 18.7 Q52.5 17.8 55 19" fill="none" stroke={COLORS.plumDark} strokeWidth="0.7" strokeLinecap="round" opacity="0.7" />
-                <path d="M40 41 Q44 47.5 48.5 42.5" fill="none" stroke={skinLine} strokeWidth="0.6" opacity="0.85" strokeLinecap="round" />
-                <path d="M51.5 42.5 Q56 47.5 60 41" fill="none" stroke={skinLine} strokeWidth="0.6" opacity="0.85" strokeLinecap="round" />
+                {/* lips: two soft outlined curves rather than a solid block */}
+                <path d="M46 19.4 Q48 18.5 50 19 Q52 18.5 54 19.4" fill="none" stroke={COLORS.plumDark} strokeWidth="0.55" strokeLinecap="round" opacity="0.6" />
+                <path d="M45.5 19.6 Q50 21.9 54.5 19.6" fill="none" stroke={COLORS.plumDark} strokeWidth="0.9" strokeLinecap="round" opacity="0.65" />
+                <path d="M40 44 Q44 51 48.5 45.5" fill="none" stroke={skinLine} strokeWidth="0.6" opacity="0.85" strokeLinecap="round" />
+                <path d="M51.5 45.5 Q56 51 60 44" fill="none" stroke={skinLine} strokeWidth="0.6" opacity="0.85" strokeLinecap="round" />
               </g>
             ) : (
               <g style={{ pointerEvents: "none" }}>
