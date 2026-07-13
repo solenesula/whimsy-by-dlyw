@@ -3118,6 +3118,11 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
   const skinFill = skin?.fill || "#F6D9DE";
   const skinLine = skin?.glow || "#DFA6BA";
   const feature = skin?.feature || "#A9677B";
+  // A single near-black ink for the body's outer silhouette outline and unselected tap-region
+  // borders, used across every skin tone rather than a tone-matched color. This reads as a
+  // deliberate illustration line (like most figure art) and stays crisp and consistent no
+  // matter which skin tone is picked, instead of risking a mismatched or washed-out line.
+  const outlineInk = "#2A1B14";
   const scaleX = shape?.scaleX ?? 1;
   const hair = getHairOverlay(hairStyle, hairColorHex || "#3B2417");
   return (
@@ -3165,14 +3170,14 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(b.k); } }}
                   className="bodypart"
                   fill={on ? COLORS.plum : "transparent"}
-                  stroke={on ? COLORS.plumDark : feature}
+                  stroke={on ? COLORS.plumDark : outlineInk}
                   strokeWidth={on ? 0.9 : 0.5} strokeLinejoin="round" />
               );
             })}
             {viewParts.filter((b) => isOn(b.k)).map((b) => (
               <path key={b.k + "-glow"} d={b.d} fill="none" stroke={COLORS.plum} strokeWidth="2.6" opacity="0.3" className="ache" style={{ pointerEvents: "none" }} />
             ))}
-            <path d={BODY_OUTLINE} fill="none" stroke={feature} strokeWidth="1.1" strokeLinejoin="round" style={{ pointerEvents: "none" }} />
+            <path d={BODY_OUTLINE} fill="none" stroke={outlineInk} strokeWidth="1.1" strokeLinejoin="round" style={{ pointerEvents: "none" }} />
             <g style={{ pointerEvents: "none" }}>{hair.scalp}</g>
             {view === "front" ? (
               <g style={{ pointerEvents: "none" }}>
