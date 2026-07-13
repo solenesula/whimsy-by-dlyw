@@ -3021,31 +3021,29 @@ function getHairOverlay(styleKey, hairColor) {
       );
       break;
     case "braids": {
-      // Parted at the center. Each strand only curves for the short stretch from the crown
-      // to just past the temple — enough to clear the face — then falls essentially straight
-      // down past the shoulder, the way a real middle-part hairstyle actually hangs, rather
-      // than swooping diagonally across the whole head. Each strand is rendered as an actual
+      // Parted at the center, each strand starts already offset out at the hairline (framing
+      // the face from the very top) and then hangs essentially straight down past the
+      // shoulder — no diagonal sweep across the head. Each strand is rendered as an actual
       // plait: a real 3-strand braid works by repeatedly crossing the outer sections over the
       // middle one, which is what produces its rope-like texture — so instead of one flat
       // line, each braid is two offset strands (a lit side and a shadow side) that visibly
       // cross back and forth along its length, plus a soft wide "volume" pass underneath for
       // fullness.
       const lightC = lighten(hairColor, 0.3), darkC = darken(hairColor, 0.35);
-      const starts = [49.5, 48.2, 46.8, 45.3, 43.7, 42];
+      const starts = [42, 40.4, 38.8, 37.2, 35.6, 34];
       starts.forEach((x0, i) => {
-        const sideX = 39.5 - i * 1.3; // clears the face (roughly x41-59) with margin
-        const endX = sideX - 3 - i * 0.4; // slight outward taper at the bottom
-        const endY = 40 + (i % 3) * 5;
+        const endY = 42 + (i % 3) * 5;
         const midY = (10 + endY) / 2;
-        const anchorsL = [[x0, 3], [sideX + 3, 5], [sideX + 0.5, 8], [sideX, 10], [sideX - 0.8, midY - 3], [endX + 1, midY + 3], [endX, endY]];
+        const drift = 0.6 + i * 0.15; // barely any horizontal travel — reads as hanging straight down
+        const anchorsL = [[x0 + 1.2, 2], [x0 + 0.4, 5.5], [x0, 8], [x0, 10], [x0 - drift * 0.3, midY], [x0 - drift * 0.7, midY + 5], [x0 - drift, endY]];
         const twistL = braidTwistPaths(anchorsL, { twists: 4.5 + (i % 2), amp: 0.9 });
         above.push(
           <path key={"braidL" + i + "v"} d={anchorsToPath(anchorsL)} stroke={hairColor} strokeWidth="2.1" fill="none" opacity="0.4" strokeLinecap="round" />,
           <path key={"braidL" + i + "d"} d={twistL.dark} stroke={darkC} strokeWidth="1.1" fill="none" opacity="0.6" strokeLinecap="round" strokeLinejoin="round" />,
           <path key={"braidL" + i + "l"} d={twistL.light} stroke={lightC} strokeWidth="1.1" fill="none" opacity="0.65" strokeLinecap="round" strokeLinejoin="round" />
         );
-        const x0r = 100 - x0, sideXr = 100 - sideX, endXr = 100 - endX;
-        const anchorsR = [[x0r, 3], [sideXr - 3, 5], [sideXr - 0.5, 8], [sideXr, 10], [sideXr + 0.8, midY - 3], [endXr - 1, midY + 3], [endXr, endY]];
+        const x0r = 100 - x0;
+        const anchorsR = anchorsL.map(([x, y]) => [100 - x, y]);
         const twistR = braidTwistPaths(anchorsR, { twists: 4.5 + (i % 2), amp: 0.9 });
         above.push(
           <path key={"braidR" + i + "v"} d={anchorsToPath(anchorsR)} stroke={hairColor} strokeWidth="2.1" fill="none" opacity="0.4" strokeLinecap="round" />,
@@ -3063,25 +3061,23 @@ function getHairOverlay(styleKey, hairColor) {
       break;
     }
     case "locs": {
-      // Same center part and quick-to-the-side framing as braids, then straight down: locs
+      // Same center part and immediate face-framing as braids, then straight down: locs
       // are thicker and twist more slowly (fewer, longer twists per strand), using the same
       // real cross-over rendering, with a wider volume pass so each section reads as thick.
       const lightC = lighten(hairColor, 0.25), darkC = darken(hairColor, 0.3);
-      const starts = [49.5, 47.8, 46, 44.2, 42.3];
+      const starts = [41.5, 39.7, 38, 36.3, 34.6];
       starts.forEach((x0, i) => {
-        const sideX = 38.5 - i * 1.5;
-        const endX = sideX - 3.5 - i * 0.5;
-        const len = 44 + (i % 3) * 6;
+        const len = 46 + (i % 3) * 6;
         const midY = (11 + len) / 2;
-        const anchorsL = [[x0, 3.5], [sideX + 3.5, 6], [sideX + 0.5, 9], [sideX, 11], [sideX - 1, midY - 4], [endX + 1.5, midY + 4], [endX, len]];
+        const drift = 0.7 + i * 0.2; // barely any horizontal travel — hangs straight down
+        const anchorsL = [[x0 + 1.4, 2.5], [x0 + 0.5, 6], [x0, 9], [x0, 11], [x0 - drift * 0.3, midY], [x0 - drift * 0.7, midY + 6], [x0 - drift, len]];
         const twistL = braidTwistPaths(anchorsL, { twists: 2.5, amp: 0.65 });
         above.push(
           <path key={"locL" + i + "v"} d={anchorsToPath(anchorsL)} stroke={hairColor} strokeWidth="2.9" fill="none" opacity="0.45" strokeLinecap="round" />,
           <path key={"locL" + i + "d"} d={twistL.dark} stroke={darkC} strokeWidth="1.5" fill="none" opacity="0.6" strokeLinecap="round" strokeLinejoin="round" />,
           <path key={"locL" + i + "l"} d={twistL.light} stroke={lightC} strokeWidth="1.5" fill="none" opacity="0.55" strokeLinecap="round" strokeLinejoin="round" />
         );
-        const x0r = 100 - x0, sideXr = 100 - sideX, endXr = 100 - endX;
-        const anchorsR = [[x0r, 3.5], [sideXr - 3.5, 6], [sideXr - 0.5, 9], [sideXr, 11], [sideXr + 1, midY - 4], [endXr - 1.5, midY + 4], [endXr, len]];
+        const anchorsR = anchorsL.map(([x, y]) => [100 - x, y]);
         const twistR = braidTwistPaths(anchorsR, { twists: 2.5, amp: 0.65 });
         above.push(
           <path key={"locR" + i + "v"} d={anchorsToPath(anchorsR)} stroke={hairColor} strokeWidth="2.9" fill="none" opacity="0.45" strokeLinecap="round" />,
@@ -3186,25 +3182,25 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
                   <path d="M41 10.5 Q39 15 40.5 19.5 Q41.5 22.5 43.5 25" fill="none" stroke={feature} strokeWidth="0.5" strokeLinecap="round" />
                   <path d="M59 10.5 Q61 15 59.5 19.5 Q58.5 22.5 56.5 25" fill="none" stroke={feature} strokeWidth="0.5" strokeLinecap="round" />
                 </g>
-                {/* thin, subtle brows, closer to a neutral resting face than a cartoon arch */}
-                <g opacity="0.55">
-                  <path d="M43.5 11.6 Q45.4 10.7 47.4 11.4" fill="none" stroke={COLORS.plumDark} strokeWidth="0.45" strokeLinecap="round" />
-                  <path d="M52.6 11.4 Q54.6 10.7 56.5 11.6" fill="none" stroke={COLORS.plumDark} strokeWidth="0.45" strokeLinecap="round" />
+                {/* thin, subtle brows, closer to a neutral resting face than a cartoon arch — dark ink, not the pink theme color, so only the lips read as pink */}
+                <g opacity="0.7">
+                  <path d="M43.5 11.6 Q45.4 10.7 47.4 11.4" fill="none" stroke={feature} strokeWidth="0.45" strokeLinecap="round" />
+                  <path d="M52.6 11.4 Q54.6 10.7 56.5 11.6" fill="none" stroke={feature} strokeWidth="0.45" strokeLinecap="round" />
                 </g>
-                {/* actual open eyes: lid outline with a visible white, iris, pupil and glint, not just a dot */}
+                {/* actual open eyes: lid outline with a visible white, iris, pupil and glint, not just a dot — dark ink, not the pink theme color */}
                 <g>
                   <path d="M43.2 13.9 Q45.4 12.1 47.6 13.9 Q45.4 15.3 43.2 13.9 Z" fill="#FFF9F4" opacity="0.9" />
-                  <path d="M43.2 13.9 Q45.4 12.1 47.6 13.9 Q45.4 15.3 43.2 13.9 Z" fill="none" stroke={COLORS.plumDark} strokeWidth="0.45" opacity="0.75" />
+                  <path d="M43.2 13.9 Q45.4 12.1 47.6 13.9 Q45.4 15.3 43.2 13.9 Z" fill="none" stroke={feature} strokeWidth="0.45" opacity="0.85" />
                   <path d="M52.4 13.9 Q54.6 12.1 56.8 13.9 Q54.6 15.3 52.4 13.9 Z" fill="#FFF9F4" opacity="0.9" />
-                  <path d="M52.4 13.9 Q54.6 12.1 56.8 13.9 Q54.6 15.3 52.4 13.9 Z" fill="none" stroke={COLORS.plumDark} strokeWidth="0.45" opacity="0.75" />
-                  <circle cx="45.4" cy="14" r="1" fill={COLORS.plumDark} opacity="0.85" />
-                  <circle cx="54.6" cy="14" r="1" fill={COLORS.plumDark} opacity="0.85" />
-                  <circle cx="45.4" cy="14" r="0.45" fill="#2A1620" opacity="0.9" />
-                  <circle cx="54.6" cy="14" r="0.45" fill="#2A1620" opacity="0.9" />
+                  <path d="M52.4 13.9 Q54.6 12.1 56.8 13.9 Q54.6 15.3 52.4 13.9 Z" fill="none" stroke={feature} strokeWidth="0.45" opacity="0.85" />
+                  <circle cx="45.4" cy="14" r="1" fill={feature} opacity="0.9" />
+                  <circle cx="54.6" cy="14" r="1" fill={feature} opacity="0.9" />
+                  <circle cx="45.4" cy="14" r="0.45" fill="#1A1210" opacity="0.95" />
+                  <circle cx="54.6" cy="14" r="0.45" fill="#1A1210" opacity="0.95" />
                   <circle cx="45.7" cy="13.6" r="0.22" fill="#fff" opacity="0.95" />
                   <circle cx="54.9" cy="13.6" r="0.22" fill="#fff" opacity="0.95" />
-                  <path d="M46.9 13 L47.8 12.1" stroke={COLORS.plumDark} strokeWidth="0.4" strokeLinecap="round" opacity="0.55" />
-                  <path d="M53.1 13 L52.2 12.1" stroke={COLORS.plumDark} strokeWidth="0.4" strokeLinecap="round" opacity="0.55" />
+                  <path d="M46.9 13 L47.8 12.1" stroke={feature} strokeWidth="0.4" strokeLinecap="round" opacity="0.65" />
+                  <path d="M53.1 13 L52.2 12.1" stroke={feature} strokeWidth="0.4" strokeLinecap="round" opacity="0.65" />
                 </g>
                 {/* nose: a real bridge plus a wider rounded tip with nostril wings, sized to actually read as a nose */}
                 <g opacity="0.95">
