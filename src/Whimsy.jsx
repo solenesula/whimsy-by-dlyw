@@ -96,7 +96,7 @@ const TOOLKIT_KEY = "dlyw-benefits";
 // anterior-abdomen convention and don't map onto how back pain is normally described.
 const BODY_MAP = [
   { k: "head", label: "Head", view: "both", d: "M50 2.5 C57 2.5 62.5 7.5 62.8 14 C63 19 61 23.5 57 26.5 C54.5 28.5 52.2 29.8 50 30 C47.8 29.8 45.5 28.5 43 26.5 C39 23.5 37 19 37.2 14 C37.5 7.5 43 2.5 50 2.5 Z" },
-  { k: "neck", label: "Neck / throat", view: "both", d: "M45 29 h10 v7 h-10 z" },
+  { k: "neck", label: "Neck / throat", view: "both", d: "M47 27.5 L53 27.5 L56.5 36 L43.5 36 Z" },
   { k: "shoulderL", label: "Left shoulder", view: "both", d: "M43 36 C36 37 30 40 26 46 L34 52 C36 45 39 39 43 36 Z" },
   { k: "shoulderR", label: "Right shoulder", view: "both", d: "M57 36 C64 37 70 40 74 46 L66 52 C64 45 61 39 57 36 Z" },
   { k: "armL", label: "Left arm", view: "both", d: "M26 46 C23 55 22 66 22 76 L30 77 C31 67 32 58 34 52 Z" },
@@ -3013,36 +3013,34 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, onOpenAppearan
                   <path d="M41 10.5 Q39 15 40.5 19.5 Q41.5 22.5 43.5 25" fill="none" stroke={skinLine} strokeWidth="0.5" strokeLinecap="round" />
                   <path d="M59 10.5 Q61 15 59.5 19.5 Q58.5 22.5 56.5 25" fill="none" stroke={skinLine} strokeWidth="0.5" strokeLinecap="round" />
                 </g>
-                {/* soft arched brows */}
-                <g opacity="0.6">
-                  <path d="M43.2 11.3 Q45.3 10 47.6 11.1" fill="none" stroke={COLORS.plumDark} strokeWidth="0.6" strokeLinecap="round" />
-                  <path d="M52.4 11.1 Q54.7 10 56.8 11.3" fill="none" stroke={COLORS.plumDark} strokeWidth="0.6" strokeLinecap="round" />
+                {/* thin, subtle brows, closer to a neutral resting face than a cartoon arch */}
+                <g opacity="0.55">
+                  <path d="M43.5 11.6 Q45.4 10.7 47.4 11.4" fill="none" stroke={COLORS.plumDark} strokeWidth="0.45" strokeLinecap="round" />
+                  <path d="M52.6 11.4 Q54.6 10.7 56.5 11.6" fill="none" stroke={COLORS.plumDark} strokeWidth="0.45" strokeLinecap="round" />
                 </g>
-                {/* smaller, more natural almond eyes with a short lash flick and a glint */}
+                {/* almond eyes: a lid outline plus a small iris, like a painted mannequin eye rather than a cartoon dot */}
                 <g>
-                  <ellipse cx="45.4" cy="14.2" rx="1.3" ry="1" fill={COLORS.plumDark} opacity="0.8" />
-                  <ellipse cx="54.6" cy="14.2" rx="1.3" ry="1" fill={COLORS.plumDark} opacity="0.8" />
-                  <circle cx="45.8" cy="13.7" r="0.32" fill="#fff" opacity="0.85" />
-                  <circle cx="55" cy="13.7" r="0.32" fill="#fff" opacity="0.85" />
-                  <g stroke={COLORS.plumDark} strokeWidth="0.45" strokeLinecap="round" opacity="0.65">
-                    <path d="M44.2 13.2 L43.5 12.3" />
-                    <path d="M45 12.9 L44.6 11.9" />
-                    <path d="M55.8 13.2 L56.5 12.3" />
-                    <path d="M55 12.9 L55.4 11.9" />
-                  </g>
+                  <path d="M43.6 14 Q45.4 12.6 47.2 14 Q45.4 15 43.6 14 Z" fill="none" stroke={COLORS.plumDark} strokeWidth="0.4" opacity="0.7" />
+                  <path d="M52.8 14 Q54.6 12.6 56.4 14 Q54.6 15 52.8 14 Z" fill="none" stroke={COLORS.plumDark} strokeWidth="0.4" opacity="0.7" />
+                  <ellipse cx="45.4" cy="14" rx="0.75" ry="0.75" fill={COLORS.plumDark} opacity="0.75" />
+                  <ellipse cx="54.6" cy="14" rx="0.75" ry="0.75" fill={COLORS.plumDark} opacity="0.75" />
+                  <path d="M46.9 13 L47.8 12.1" stroke={COLORS.plumDark} strokeWidth="0.4" strokeLinecap="round" opacity="0.55" />
+                  <path d="M53.1 13 L52.2 12.1" stroke={COLORS.plumDark} strokeWidth="0.4" strokeLinecap="round" opacity="0.55" />
                 </g>
-                {/* nose: a simple down-stroke with a soft tip, not just two dots */}
+                {/* nose: a simple down-stroke with a soft tip */}
                 <path d="M49.7 15.2 Q49.2 17.3 49.5 18.2 Q50 18.6 50.5 18.2" fill="none" stroke={skinLine} strokeWidth="0.55" strokeLinecap="round" opacity="0.75" />
-                {/* rosy cheeks, set back further from the eyes */}
-                <g opacity="0.25">
-                  <ellipse cx="41.5" cy="19" rx="2.4" ry="1.5" fill={COLORS.plum} />
-                  <ellipse cx="58.5" cy="19" rx="2.4" ry="1.5" fill={COLORS.plum} />
-                </g>
-                {/* lips: two soft outlined curves rather than a solid block */}
-                <path d="M46 19.4 Q48 18.5 50 19 Q52 18.5 54 19.4" fill="none" stroke={COLORS.plumDark} strokeWidth="0.55" strokeLinecap="round" opacity="0.6" />
-                <path d="M45.5 19.6 Q50 21.9 54.5 19.6" fill="none" stroke={COLORS.plumDark} strokeWidth="0.9" strokeLinecap="round" opacity="0.65" />
-                <path d="M40 44 Q44 51 48.5 45.5" fill="none" stroke={skinLine} strokeWidth="0.6" opacity="0.85" strokeLinecap="round" />
-                <path d="M51.5 45.5 Q56 51 60 44" fill="none" stroke={skinLine} strokeWidth="0.6" opacity="0.85" strokeLinecap="round" />
+                {/* neutral closed mouth, resting expression rather than a smile */}
+                <path d="M46 19.6 Q50 20.4 54 19.6" fill="none" stroke={COLORS.plumDark} strokeWidth="0.6" strokeLinecap="round" opacity="0.6" />
+                {/* collarbone hint just below the neck */}
+                <path d="M40 38.5 Q50 41 60 38.5" fill="none" stroke={skinLine} strokeWidth="0.5" opacity="0.35" />
+                {/* fuller, rounder bust with an underbust curve, set into the chest rather than floating on it */}
+                <path d="M39.5 42 C37 46.5 38 51 43 52.5 C46.5 51.5 48.5 48 49 44.5 C47.5 41.5 43 40.5 39.5 42 Z"
+                  fill={skinFill} opacity="0.6" stroke={skinLine} strokeWidth="0.5" />
+                <path d="M60.5 42 C63 46.5 62 51 57 52.5 C53.5 51.5 51.5 48 51 44.5 C52.5 41.5 57 40.5 60.5 42 Z"
+                  fill={skinFill} opacity="0.6" stroke={skinLine} strokeWidth="0.5" />
+                <path d="M50 41.5 L50 45.5" stroke={skinLine} strokeWidth="0.4" opacity="0.4" />
+                {/* navel */}
+                <ellipse cx="50" cy="63" rx="0.5" ry="0.7" fill="none" stroke={skinLine} strokeWidth="0.5" opacity="0.5" />
               </g>
             ) : (
               <g style={{ pointerEvents: "none" }}>
