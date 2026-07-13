@@ -36,14 +36,18 @@ const THEMES = [
   { key: "sage", label: "Sage", plum: "#5F8F6E", plumDark: "#3C6047", pill: "#E3EDE4", line: "#D3E3D6" },
 ];
 
+// "glow" is a light highlight/selection-state color derived close to the fill (used for the
+// body outline and the ache-selection ring). "feature" is a separate, deliberately higher-
+// contrast color for facial contour lines (jaw, cheek, nose, collarbone, bust, navel, spine)
+// so the face reads with real definition instead of flattening into the skin fill at every tone.
 const SKIN_TONES = [
-  { key: "blush", label: "Blush (default)", fill: "#F6D9DE", glow: "#DFA6BA" },
-  { key: "deep", label: "Deep", fill: "#5C3A28", glow: "#7A4E35" },
-  { key: "rich", label: "Rich", fill: "#7A4A2E", glow: "#94603F" },
-  { key: "warm", label: "Warm", fill: "#A9714A", glow: "#BD8961" },
-  { key: "tan", label: "Tan", fill: "#C99368", glow: "#D9AA82" },
-  { key: "light", label: "Light", fill: "#E8B98F", glow: "#F0CBA8" },
-  { key: "porcelain", label: "Porcelain", fill: "#F1D3B4", glow: "#F6E0C8" },
+  { key: "blush", label: "Blush (default)", fill: "#F6D9DE", glow: "#DFA6BA", feature: "#A9677B" },
+  { key: "deep", label: "Deep", fill: "#5C3A28", glow: "#7A4E35", feature: "#E7C39A" },
+  { key: "rich", label: "Rich", fill: "#7A4A2E", glow: "#94603F", feature: "#F0C89C" },
+  { key: "warm", label: "Warm", fill: "#A9714A", glow: "#BD8961", feature: "#4A2C16" },
+  { key: "tan", label: "Tan", fill: "#C99368", glow: "#D9AA82", feature: "#6B3F22" },
+  { key: "light", label: "Light", fill: "#E8B98F", glow: "#F0CBA8", feature: "#8A5530" },
+  { key: "porcelain", label: "Porcelain", fill: "#F1D3B4", glow: "#F6E0C8", feature: "#A66E42" },
 ];
 
 // Body map comes in a few different builds so the silhouette doesn't default to a single
@@ -69,6 +73,20 @@ const HAIRSTYLES = [
   { key: "locs", label: "Locs" },
   { key: "headwrap", label: "Headwrap" },
   { key: "bald", label: "Bald / shaved" },
+];
+
+// Hair color is its own choice, independent of skin tone — hair was previously tinted with
+// the skin "glow" color, which read as flat/washed out since it was designed as a highlight,
+// not a pigment. These are real hair-color values so the hairstyle actually reads as hair.
+const HAIR_COLORS = [
+  { key: "black", label: "Black", hex: "#241712" },
+  { key: "darkbrown", label: "Dark brown", hex: "#3B2417" },
+  { key: "brown", label: "Brown", hex: "#5A3820" },
+  { key: "auburn", label: "Auburn", hex: "#7A3B22" },
+  { key: "burgundy", label: "Burgundy", hex: "#6B1F3A" },
+  { key: "honey", label: "Honey blonde", hex: "#B8823D" },
+  { key: "platinum", label: "Platinum blonde", hex: "#D9C79A" },
+  { key: "gray", label: "Gray / silver", hex: "#9B9B9B" },
 ];
 
 const TEXT_SCALES = [
@@ -846,6 +864,7 @@ export default function Whimsy() {
   const [skinTone, setSkinTone] = useState("blush");
   const [bodyShape, setBodyShape] = useState("b2");
   const [hairStyle, setHairStyle] = useState("afro");
+  const [hairColor, setHairColor] = useState("black");
   const [textScale, setTextScale] = useState("default");
   const [motionOff, setMotionOff] = useState(false);
 
@@ -859,6 +878,7 @@ export default function Whimsy() {
   GRAD = `linear-gradient(135deg, ${activeTheme.plum}, ${activeTheme.plumDark})`;
   const activeSkin = SKIN_TONES.find((s) => s.key === skinTone) || SKIN_TONES[0];
   const activeBodyShape = BODY_SHAPES.find((s) => s.key === bodyShape) || BODY_SHAPES[1];
+  const activeHairColor = HAIR_COLORS.find((h) => h.key === hairColor) || HAIR_COLORS[0];
   const activeScale = TEXT_SCALES.find((s) => s.key === textScale) || TEXT_SCALES[0];
 
   useEffect(() => {
@@ -892,6 +912,7 @@ export default function Whimsy() {
       if (typeof tk.skinTone === "string") setSkinTone(tk.skinTone);
       if (typeof tk.bodyShape === "string") setBodyShape(tk.bodyShape);
       if (typeof tk.hairStyle === "string") setHairStyle(tk.hairStyle);
+      if (typeof tk.hairColor === "string") setHairColor(tk.hairColor);
       if (typeof tk.textScale === "string") setTextScale(tk.textScale);
       if (typeof tk.motionOff === "boolean") setMotionOff(tk.motionOff);
     } else {
@@ -908,11 +929,11 @@ export default function Whimsy() {
       store.set(TOOLKIT_KEY, {
         plan: tPlan, planType: tType, checked: tChecked, consent: rConsent,
         conditions: myConditions, name: myName, medHx, prepNotes, prepSpecialty,
-        setupDone, rSeen, theme, skinTone, bodyShape, hairStyle, textScale, motionOff,
+        setupDone, rSeen, theme, skinTone, bodyShape, hairStyle, hairColor, textScale, motionOff,
       });
     }, 600);
     return () => clearTimeout(timer);
-  }, [tPlan, tType, tChecked, rConsent, myConditions, myName, medHx, prepNotes, prepSpecialty, setupDone, rSeen, theme, skinTone, bodyShape, hairStyle, textScale, motionOff, loaded]);
+  }, [tPlan, tType, tChecked, rConsent, myConditions, myName, medHx, prepNotes, prepSpecialty, setupDone, rSeen, theme, skinTone, bodyShape, hairStyle, hairColor, textScale, motionOff, loaded]);
 
 
 
@@ -1762,7 +1783,7 @@ export default function Whimsy() {
                 <label className={labelCls} style={{ color: COLORS.inkSoft, marginBottom: 0 }}>Where does it hurt?</label>
                 <span className="text-[11px]" style={{ color: COLORS.inkSoft }}>tap where it aches</span>
               </div>
-              <BodyMap selected={painAreas} setSelected={setPainAreas} skin={activeSkin} shape={activeBodyShape} hairStyle={hairStyle}
+              <BodyMap selected={painAreas} setSelected={setPainAreas} skin={activeSkin} shape={activeBodyShape} hairStyle={hairStyle} hairColorHex={activeHairColor.hex}
                 onOpenAppearance={() => { setTab("toolkit"); setOpenTool("appearance"); }} />
               {painAreas.length > 0 && (
                 <p className="text-xs mt-2 text-center" style={{ color: COLORS.plumDark, fontFamily: SERIF, fontStyle: "italic" }}>
@@ -2462,6 +2483,17 @@ export default function Whimsy() {
                 ))}
               </div>
 
+              <p className={labelCls} style={{ color: COLORS.inkSoft }}>Hair color</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {HAIR_COLORS.map((h) => (
+                  <button key={h.key} onClick={() => setHairColor(h.key)} aria-label={h.label}
+                    className="w-9 h-9 rounded-full focus:outline-none focus-visible:ring-2 flex items-center justify-center"
+                    style={{ background: h.hex, border: hairColor === h.key ? `3px solid ${COLORS.plumDark}` : `1px solid ${COLORS.line}` }}>
+                    {hairColor === h.key && <Check size={14} color="#fff" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,0.6))" }} />}
+                  </button>
+                ))}
+              </div>
+
               <p className={labelCls} style={{ color: COLORS.inkSoft }}>Text size</p>
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {TEXT_SCALES.map((s) => (
@@ -2927,12 +2959,13 @@ function getHairOverlay(styleKey, hairColor) {
       );
       break;
     case "braids": {
-      const startXs = [40, 44, 56, 60];
+      const startXs = [38, 41, 44, 47, 50, 53, 56, 59, 62];
       startXs.forEach((x, i) => {
-        const drift = i % 2 === 0 ? -2 : 2;
+        const drift = i % 2 === 0 ? -1.6 : 1.6;
+        const len = 44 + (i % 3) * 3;
         above.push(
-          <path key={"braid" + i} d={`M${x} 6 C${x + drift} 20 ${x + drift * 1.5} 34 ${x} 46`}
-            stroke={hairColor} strokeWidth="1" fill="none" opacity="0.5" strokeLinecap="round" />
+          <path key={"braid" + i} d={`M${x} 6 C${x + drift} 20 ${x + drift * 1.3} 34 ${x} ${len}`}
+            stroke={hairColor} strokeWidth="0.9" fill="none" opacity="0.5" strokeLinecap="round" />
         );
       });
       break;
@@ -2971,7 +3004,7 @@ function getHairOverlay(styleKey, hairColor) {
   return { behind, scalp, above };
 }
 
-function BodyMap({ selected, setSelected, skin, shape, hairStyle, onOpenAppearance }) {
+function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, onOpenAppearance }) {
   const [view, setView] = useState("front");
   const toggle = (k) => setSelected(selected.includes(k) ? selected.filter((x) => x !== k) : [...selected, k]);
   const viewParts = BODY_MAP.filter((b) => b.d && (b.view === "both" || b.view === view));
@@ -2982,8 +3015,9 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, onOpenAppearan
   const isOn = (k) => selected.includes(k) || allOver || (joints && jointKeys.includes(k));
   const skinFill = skin?.fill || "#F6D9DE";
   const skinLine = skin?.glow || "#DFA6BA";
+  const feature = skin?.feature || "#A9677B";
   const scaleX = shape?.scaleX ?? 1;
-  const hair = getHairOverlay(hairStyle, skinLine);
+  const hair = getHairOverlay(hairStyle, hairColorHex || "#3B2417");
   return (
     <div>
       <div className="flex items-center justify-center gap-2 mb-2">
@@ -3030,10 +3064,10 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, onOpenAppearan
             <g style={{ pointerEvents: "none" }}>{hair.scalp}</g>
             {view === "front" ? (
               <g style={{ pointerEvents: "none" }}>
-                {/* faint cheekbone/jaw contour, so the head reads as sculpted rather than flat */}
-                <g opacity="0.22">
-                  <path d="M41 10.5 Q39 15 40.5 19.5 Q41.5 22.5 43.5 25" fill="none" stroke={skinLine} strokeWidth="0.5" strokeLinecap="round" />
-                  <path d="M59 10.5 Q61 15 59.5 19.5 Q58.5 22.5 56.5 25" fill="none" stroke={skinLine} strokeWidth="0.5" strokeLinecap="round" />
+                {/* cheekbone/jaw contour, using the tone's higher-contrast feature color so it reads as sculpted rather than flat */}
+                <g opacity="0.5">
+                  <path d="M41 10.5 Q39 15 40.5 19.5 Q41.5 22.5 43.5 25" fill="none" stroke={feature} strokeWidth="0.5" strokeLinecap="round" />
+                  <path d="M59 10.5 Q61 15 59.5 19.5 Q58.5 22.5 56.5 25" fill="none" stroke={feature} strokeWidth="0.5" strokeLinecap="round" />
                 </g>
                 {/* thin, subtle brows, closer to a neutral resting face than a cartoon arch */}
                 <g opacity="0.55">
@@ -3055,32 +3089,38 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, onOpenAppearan
                   <path d="M46.9 13 L47.8 12.1" stroke={COLORS.plumDark} strokeWidth="0.4" strokeLinecap="round" opacity="0.55" />
                   <path d="M53.1 13 L52.2 12.1" stroke={COLORS.plumDark} strokeWidth="0.4" strokeLinecap="round" opacity="0.55" />
                 </g>
-                {/* nose: a simple down-stroke with a soft tip */}
-                <path d="M49.7 15.2 Q49.2 17.3 49.5 18.2 Q50 18.6 50.5 18.2" fill="none" stroke={skinLine} strokeWidth="0.55" strokeLinecap="round" opacity="0.75" />
-                {/* full lips: an upper lip with a cupid's bow and a fuller rounded lower lip, both filled */}
-                <g>
-                  <path d="M45.3 19.3 Q47.6 18.2 49 19.1 L50 18.8 L51 19.1 Q52.4 18.2 54.7 19.3 Q50 20 45.3 19.3 Z"
-                    fill={COLORS.plum} opacity="0.55" stroke={COLORS.plumDark} strokeWidth="0.3" />
-                  <path d="M45.3 19.3 Q50 22.3 54.7 19.3 Q50 21.1 45.3 19.3 Z"
-                    fill={COLORS.plum} opacity="0.7" stroke={COLORS.plumDark} strokeWidth="0.35" />
-                  <path d="M45.3 19.3 L54.7 19.3" stroke={COLORS.plumDark} strokeWidth="0.35" opacity="0.5" />
+                {/* nose: a real bridge plus a wider rounded tip with nostril wings, sized to actually read as a nose */}
+                <g opacity="0.95">
+                  <path d="M49.6 13.9 Q49 16.9 49.2 18.4" fill="none" stroke={feature} strokeWidth="0.55" strokeLinecap="round" />
+                  <path d="M47.6 18.7 Q47.3 19.6 48.1 20 Q49 20.5 50 20.1 Q51 20.5 51.9 20 Q52.7 19.6 52.4 18.7 Q51.2 19.9 50 19.6 Q48.8 19.9 47.6 18.7 Z"
+                    fill={skinFill} stroke={feature} strokeWidth="0.5" />
                 </g>
+                {/* full, symmetric lips sitting below the nose: a defined cupid's bow, a fuller rounded lower lip, both filled */}
+                <g>
+                  <path d="M46 21.6 Q47.8 20.5 49 21.3 Q50 20.8 51 21.3 Q52.2 20.5 54 21.6 Q50 22.5 46 21.6 Z"
+                    fill={COLORS.plum} opacity="0.6" stroke={COLORS.plumDark} strokeWidth="0.3" />
+                  <path d="M46 21.6 Q50 25 54 21.6 Q50 23.6 46 21.6 Z"
+                    fill={COLORS.plum} opacity="0.78" stroke={COLORS.plumDark} strokeWidth="0.35" />
+                  <path d="M46 21.6 L54 21.6" stroke={COLORS.plumDark} strokeWidth="0.35" opacity="0.5" />
+                </g>
+                {/* jawline: a defined contour from cheek through the chin, so the head reads as a real face shape */}
+                <path d="M43.5 24.5 Q46.3 28.2 50 28.9 Q53.7 28.2 56.5 24.5" fill="none" stroke={feature} strokeWidth="0.6" strokeLinecap="round" opacity="0.55" />
                 {/* collarbone hint just below the neck */}
-                <path d="M40 38.5 Q50 41 60 38.5" fill="none" stroke={skinLine} strokeWidth="0.5" opacity="0.35" />
+                <path d="M40 38.5 Q50 41 60 38.5" fill="none" stroke={feature} strokeWidth="0.5" opacity="0.4" />
                 {/* fuller, rounder bust with an underbust curve, set into the chest rather than floating on it */}
                 <path d="M39.5 42 C37 46.5 38 51 43 52.5 C46.5 51.5 48.5 48 49 44.5 C47.5 41.5 43 40.5 39.5 42 Z"
-                  fill={skinFill} opacity="0.6" stroke={skinLine} strokeWidth="0.5" />
+                  fill={skinFill} opacity="0.6" stroke={feature} strokeWidth="0.5" />
                 <path d="M60.5 42 C63 46.5 62 51 57 52.5 C53.5 51.5 51.5 48 51 44.5 C52.5 41.5 57 40.5 60.5 42 Z"
-                  fill={skinFill} opacity="0.6" stroke={skinLine} strokeWidth="0.5" />
-                <path d="M50 41.5 L50 45.5" stroke={skinLine} strokeWidth="0.4" opacity="0.4" />
+                  fill={skinFill} opacity="0.6" stroke={feature} strokeWidth="0.5" />
+                <path d="M50 41.5 L50 45.5" stroke={feature} strokeWidth="0.4" opacity="0.45" />
                 {/* navel */}
-                <ellipse cx="50" cy="63" rx="0.5" ry="0.7" fill="none" stroke={skinLine} strokeWidth="0.5" opacity="0.5" />
+                <ellipse cx="50" cy="63" rx="0.5" ry="0.7" fill="none" stroke={feature} strokeWidth="0.5" opacity="0.55" />
               </g>
             ) : (
               <g style={{ pointerEvents: "none" }}>
-                <path d="M50 36 L50 73" stroke={skinLine} strokeWidth="0.6" opacity="0.55" strokeDasharray="1.2 2" />
-                <path d="M40 40 Q46 46 42 54" fill="none" stroke={skinLine} strokeWidth="0.5" opacity="0.45" />
-                <path d="M60 40 Q54 46 58 54" fill="none" stroke={skinLine} strokeWidth="0.5" opacity="0.45" />
+                <path d="M50 36 L50 73" stroke={feature} strokeWidth="0.6" opacity="0.55" strokeDasharray="1.2 2" />
+                <path d="M40 40 Q46 46 42 54" fill="none" stroke={feature} strokeWidth="0.5" opacity="0.5" />
+                <path d="M60 40 Q54 46 58 54" fill="none" stroke={feature} strokeWidth="0.5" opacity="0.5" />
               </g>
             )}
             <g style={{ pointerEvents: "none" }}>{hair.above}</g>
