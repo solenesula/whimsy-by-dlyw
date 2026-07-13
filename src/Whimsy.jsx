@@ -3021,31 +3021,32 @@ function getHairOverlay(styleKey, hairColor) {
       );
       break;
     case "braids": {
-      // Parted at the center and swept to the sides like curtain bangs, so strands frame
-      // the face along the hairline/temples and fall past the shoulders, never crossing
-      // over the eyes, nose, or mouth. Each strand is rendered as an actual plait: a real
-      // 3-strand braid works by repeatedly crossing the outer sections over the middle
-      // one, which is what produces its rope-like texture — so instead of one flat line,
-      // each braid is two offset strands (a lit side and a shadow side) that visibly cross
-      // back and forth along its length.
-      // Fuller than a single fine line: each braid gets a soft wide "volume" pass in the
-      // plain hair color underneath, then the light/dark twist strands on top for texture.
+      // Parted at the center. Each strand only curves for the short stretch from the crown
+      // to just past the temple — enough to clear the face — then falls essentially straight
+      // down past the shoulder, the way a real middle-part hairstyle actually hangs, rather
+      // than swooping diagonally across the whole head. Each strand is rendered as an actual
+      // plait: a real 3-strand braid works by repeatedly crossing the outer sections over the
+      // middle one, which is what produces its rope-like texture — so instead of one flat
+      // line, each braid is two offset strands (a lit side and a shadow side) that visibly
+      // cross back and forth along its length, plus a soft wide "volume" pass underneath for
+      // fullness.
       const lightC = lighten(hairColor, 0.3), darkC = darken(hairColor, 0.35);
-      const starts = [50.5, 49.3, 48, 46.6, 45, 43.2];
+      const starts = [49.5, 48.2, 46.8, 45.3, 43.7, 42];
       starts.forEach((x0, i) => {
-        const midX = 36.5 - i * 1.3;
-        const endX = 30 - i * 0.85;
+        const sideX = 39.5 - i * 1.3; // clears the face (roughly x41-59) with margin
+        const endX = sideX - 3 - i * 0.4; // slight outward taper at the bottom
         const endY = 40 + (i % 3) * 5;
-        const anchorsL = [[x0, 3], [midX + 8, 9], [midX + 1, 17], [midX - 1, 25], [midX - 2.5, 33], [endX, 36], [endX, endY]];
-        const twistL = braidTwistPaths(anchorsL, { twists: 4.5 + (i % 2), amp: 0.95 });
+        const midY = (10 + endY) / 2;
+        const anchorsL = [[x0, 3], [sideX + 3, 5], [sideX + 0.5, 8], [sideX, 10], [sideX - 0.8, midY - 3], [endX + 1, midY + 3], [endX, endY]];
+        const twistL = braidTwistPaths(anchorsL, { twists: 4.5 + (i % 2), amp: 0.9 });
         above.push(
           <path key={"braidL" + i + "v"} d={anchorsToPath(anchorsL)} stroke={hairColor} strokeWidth="2.1" fill="none" opacity="0.4" strokeLinecap="round" />,
           <path key={"braidL" + i + "d"} d={twistL.dark} stroke={darkC} strokeWidth="1.1" fill="none" opacity="0.6" strokeLinecap="round" strokeLinejoin="round" />,
           <path key={"braidL" + i + "l"} d={twistL.light} stroke={lightC} strokeWidth="1.1" fill="none" opacity="0.65" strokeLinecap="round" strokeLinejoin="round" />
         );
-        const x0r = 100 - x0, midXr = 100 - midX, endXr = 100 - endX;
-        const anchorsR = [[x0r, 3], [midXr - 8, 9], [midXr - 1, 17], [midXr + 1, 25], [midXr + 2.5, 33], [endXr, 36], [endXr, endY]];
-        const twistR = braidTwistPaths(anchorsR, { twists: 4.5 + (i % 2), amp: 0.95 });
+        const x0r = 100 - x0, sideXr = 100 - sideX, endXr = 100 - endX;
+        const anchorsR = [[x0r, 3], [sideXr - 3, 5], [sideXr - 0.5, 8], [sideXr, 10], [sideXr + 0.8, midY - 3], [endXr - 1, midY + 3], [endXr, endY]];
+        const twistR = braidTwistPaths(anchorsR, { twists: 4.5 + (i % 2), amp: 0.9 });
         above.push(
           <path key={"braidR" + i + "v"} d={anchorsToPath(anchorsR)} stroke={hairColor} strokeWidth="2.1" fill="none" opacity="0.4" strokeLinecap="round" />,
           <path key={"braidR" + i + "d"} d={twistR.dark} stroke={darkC} strokeWidth="1.1" fill="none" opacity="0.6" strokeLinecap="round" strokeLinejoin="round" />,
@@ -3062,26 +3063,26 @@ function getHairOverlay(styleKey, hairColor) {
       break;
     }
     case "locs": {
-      // Same curtain-bangs framing as braids. Locs are thicker and twist more slowly than
-      // braids (fewer, longer twists per strand), using the same real cross-over rendering.
-      // Fuller, thicker sections than braids: wider volume pass, wider twist strands, and
-      // one more section per side so the head reads as fully covered, not sparse.
+      // Same center part and quick-to-the-side framing as braids, then straight down: locs
+      // are thicker and twist more slowly (fewer, longer twists per strand), using the same
+      // real cross-over rendering, with a wider volume pass so each section reads as thick.
       const lightC = lighten(hairColor, 0.25), darkC = darken(hairColor, 0.3);
-      const starts = [50.5, 48.8, 47, 45, 43];
+      const starts = [49.5, 47.8, 46, 44.2, 42.3];
       starts.forEach((x0, i) => {
-        const midX = 33 - i * 1.5;
-        const endX = 28.5 - i * 1;
+        const sideX = 38.5 - i * 1.5;
+        const endX = sideX - 3.5 - i * 0.5;
         const len = 44 + (i % 3) * 6;
-        const anchorsL = [[x0, 3.5], [midX + 9, 11], [midX + 1, 21], [midX - 1, 30], [midX - 3, 37], [endX, 40], [endX, len]];
-        const twistL = braidTwistPaths(anchorsL, { twists: 2.5, amp: 0.7 });
+        const midY = (11 + len) / 2;
+        const anchorsL = [[x0, 3.5], [sideX + 3.5, 6], [sideX + 0.5, 9], [sideX, 11], [sideX - 1, midY - 4], [endX + 1.5, midY + 4], [endX, len]];
+        const twistL = braidTwistPaths(anchorsL, { twists: 2.5, amp: 0.65 });
         above.push(
           <path key={"locL" + i + "v"} d={anchorsToPath(anchorsL)} stroke={hairColor} strokeWidth="2.9" fill="none" opacity="0.45" strokeLinecap="round" />,
           <path key={"locL" + i + "d"} d={twistL.dark} stroke={darkC} strokeWidth="1.5" fill="none" opacity="0.6" strokeLinecap="round" strokeLinejoin="round" />,
           <path key={"locL" + i + "l"} d={twistL.light} stroke={lightC} strokeWidth="1.5" fill="none" opacity="0.55" strokeLinecap="round" strokeLinejoin="round" />
         );
-        const x0r = 100 - x0, midXr = 100 - midX, endXr = 100 - endX;
-        const anchorsR = [[x0r, 3.5], [midXr - 9, 11], [midXr - 1, 21], [midXr + 1, 30], [midXr + 3, 37], [endXr, 40], [endXr, len]];
-        const twistR = braidTwistPaths(anchorsR, { twists: 2.5, amp: 0.7 });
+        const x0r = 100 - x0, sideXr = 100 - sideX, endXr = 100 - endX;
+        const anchorsR = [[x0r, 3.5], [sideXr - 3.5, 6], [sideXr - 0.5, 9], [sideXr, 11], [sideXr + 1, midY - 4], [endXr - 1.5, midY + 4], [endXr, len]];
+        const twistR = braidTwistPaths(anchorsR, { twists: 2.5, amp: 0.65 });
         above.push(
           <path key={"locR" + i + "v"} d={anchorsToPath(anchorsR)} stroke={hairColor} strokeWidth="2.9" fill="none" opacity="0.45" strokeLinecap="round" />,
           <path key={"locR" + i + "d"} d={twistR.dark} stroke={darkC} strokeWidth="1.5" fill="none" opacity="0.6" strokeLinecap="round" strokeLinejoin="round" />,
@@ -3117,12 +3118,11 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
   const isOn = (k) => selected.includes(k) || allOver || (joints && jointKeys.includes(k));
   const skinFill = skin?.fill || "#F6D9DE";
   const skinLine = skin?.glow || "#DFA6BA";
-  const feature = skin?.feature || "#A9677B";
-  // A single near-black ink for the body's outer silhouette outline and unselected tap-region
-  // borders, used across every skin tone rather than a tone-matched color. This reads as a
-  // deliberate illustration line (like most figure art) and stays crisp and consistent no
-  // matter which skin tone is picked, instead of risking a mismatched or washed-out line.
-  const outlineInk = "#2A1B14";
+  // The outline is always the same skin tone, just darker — not a separately authored color
+  // and not one fixed black for every tone. This means it naturally scales with the tone
+  // picked: the light blush default gets a dark dusty-pink line, and deep skin gets a line
+  // dark enough to read as black, without ever needing a special case per tone.
+  const feature = darken(skinFill, 0.5);
   const scaleX = shape?.scaleX ?? 1;
   const hair = getHairOverlay(hairStyle, hairColorHex || "#3B2417");
   return (
@@ -3170,14 +3170,14 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(b.k); } }}
                   className="bodypart"
                   fill={on ? COLORS.plum : "transparent"}
-                  stroke={on ? COLORS.plumDark : outlineInk}
+                  stroke={on ? COLORS.plumDark : feature}
                   strokeWidth={on ? 0.9 : 0.5} strokeLinejoin="round" />
               );
             })}
             {viewParts.filter((b) => isOn(b.k)).map((b) => (
               <path key={b.k + "-glow"} d={b.d} fill="none" stroke={COLORS.plum} strokeWidth="2.6" opacity="0.3" className="ache" style={{ pointerEvents: "none" }} />
             ))}
-            <path d={BODY_OUTLINE} fill="none" stroke={outlineInk} strokeWidth="1.1" strokeLinejoin="round" style={{ pointerEvents: "none" }} />
+            <path d={BODY_OUTLINE} fill="none" stroke={feature} strokeWidth="1.1" strokeLinejoin="round" style={{ pointerEvents: "none" }} />
             <g style={{ pointerEvents: "none" }}>{hair.scalp}</g>
             {view === "front" ? (
               <g style={{ pointerEvents: "none" }}>
