@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Sparkles, Trash2, Copy, Check, NotebookPen, TrendingUp, FileText, Scale, Heart, Download, Upload, BookOpen, ChevronDown, ChevronUp, Leaf, Shield, Search, Library, FlaskConical, CalendarCheck, Soup, Flower2, Camera, Palette } from "lucide-react";
+import { X, Sparkles, Trash2, Copy, Check, NotebookPen, TrendingUp, FileText, Scale, Heart, Download, Upload, BookOpen, ChevronDown, ChevronUp, Leaf, Shield, Search, Library, FlaskConical, CalendarCheck, Soup, Flower2, Camera, Palette, Bell, Pill, Printer } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 // Whimsy, by Don't Lose Your Whimsy
@@ -57,10 +57,15 @@ const SKIN_TONES = [
 // Body map comes in a few different builds so the silhouette doesn't default to a single
 // "ideal" body type. Each scales the same outline horizontally around its center, so limbs,
 // waist, and hips all widen together and the tap zones underneath still line up.
+// "curve" scales the bust/hip detail overlays independently of the overall frame width
+// (scaleX), so the three options read as genuinely different proportions — not just the
+// same shape resized. A full per-type outline redesign would need three separate hand-drawn
+// silhouettes; this is the safe version that varies proportion without touching the shared
+// BODY_OUTLINE path all three sizes rely on.
 const BODY_SHAPES = [
-  { key: "b1", label: "Body type 1", scaleX: 1.0 },
-  { key: "b2", label: "Body type 2 (default)", scaleX: 1.16 },
-  { key: "b3", label: "Body type 3", scaleX: 1.34 },
+  { key: "b1", label: "Body type 1", scaleX: 1.0, curve: 0.78 },
+  { key: "b2", label: "Body type 2 (default)", scaleX: 1.16, curve: 1.0 },
+  { key: "b3", label: "Body type 3", scaleX: 1.34, curve: 1.3 },
 ];
 
 // Hairstyle options for the body map's silhouette, styled after natural and protective
@@ -91,6 +96,18 @@ const HAIR_COLORS = [
   { key: "honey", label: "Honey blonde", hex: "#B8823D" },
   { key: "platinum", label: "Platinum blonde", hex: "#D9C79A" },
   { key: "gray", label: "Gray / silver", hex: "#9B9B9B" },
+];
+
+// A headwrap is cloth, not hair — it shouldn't be forced to match whatever's picked for hair
+// color. Its own small fabric palette, independent of HAIR_COLORS.
+const WRAP_COLORS = [
+  { key: "plum", label: "Plum", hex: "#7A2E4D" },
+  { key: "marigold", label: "Marigold", hex: "#D98E2B" },
+  { key: "sage", label: "Sage", hex: "#6B8E6B" },
+  { key: "indigo", label: "Indigo", hex: "#2E3A6B" },
+  { key: "rust", label: "Rust", hex: "#A84A2B" },
+  { key: "cream", label: "Cream", hex: "#E8DCC4" },
+  { key: "black", label: "Black", hex: "#241712" },
 ];
 
 const TEXT_SCALES = [
@@ -869,8 +886,23 @@ export default function Whimsy() {
   const [bodyShape, setBodyShape] = useState("b2");
   const [hairStyle, setHairStyle] = useState("afro");
   const [hairColor, setHairColor] = useState("black");
+  const [wrapColor, setWrapColor] = useState("plum");
   const [textScale, setTextScale] = useState("default");
   const [motionOff, setMotionOff] = useState(false);
+  const [reminderOn, setReminderOn] = useState(false);
+  const [reminderTime, setReminderTime] = useState("19:00");
+  // Appearance now opens as a popup from the palette button on the body map, instead of
+  // only living buried in a Toolkit accordion — same content, just reachable in one tap
+  // from where you're actually looking at the body map.
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
+
+  // current medication dosing schedule + refill dates — separate from medHx (which tracks
+  // allergies/things that didn't work), this is "what I'm actively taking and when".
+  const [medSchedule, setMedSchedule] = useState([]);
+  const [msMed, setMsMed] = useState("");
+  const [msDose, setMsDose] = useState("");
+  const [msTimes, setMsTimes] = useState("");
+  const [msRefillDate, setMsRefillDate] = useState("");
 
   // apply the chosen theme by mutating the shared COLORS/GRAD references before
   // this render's JSX (and every sibling component's JSX) reads them.
@@ -883,6 +915,7 @@ export default function Whimsy() {
   const activeSkin = SKIN_TONES.find((s) => s.key === skinTone) || SKIN_TONES[0];
   const activeBodyShape = BODY_SHAPES.find((s) => s.key === bodyShape) || BODY_SHAPES[1];
   const activeHairColor = HAIR_COLORS.find((h) => h.key === hairColor) || HAIR_COLORS[0];
+  const activeWrapColor = WRAP_COLORS.find((w) => w.key === wrapColor) || WRAP_COLORS[0];
   const activeScale = TEXT_SCALES.find((s) => s.key === textScale) || TEXT_SCALES[0];
 
   useEffect(() => {
@@ -917,8 +950,12 @@ export default function Whimsy() {
       if (typeof tk.bodyShape === "string") setBodyShape(tk.bodyShape);
       if (typeof tk.hairStyle === "string") setHairStyle(tk.hairStyle);
       if (typeof tk.hairColor === "string") setHairColor(tk.hairColor);
+      if (typeof tk.wrapColor === "string") setWrapColor(tk.wrapColor);
       if (typeof tk.textScale === "string") setTextScale(tk.textScale);
       if (typeof tk.motionOff === "boolean") setMotionOff(tk.motionOff);
+      if (typeof tk.reminderOn === "boolean") setReminderOn(tk.reminderOn);
+      if (typeof tk.reminderTime === "string") setReminderTime(tk.reminderTime);
+      if (Array.isArray(tk.medSchedule)) setMedSchedule(tk.medSchedule);
     } else {
       setSetupDone(false);
       setRSeen(false);
@@ -933,11 +970,12 @@ export default function Whimsy() {
       store.set(TOOLKIT_KEY, {
         plan: tPlan, planType: tType, checked: tChecked, consent: rConsent,
         conditions: myConditions, name: myName, medHx, prepNotes, prepSpecialty,
-        setupDone, rSeen, theme, skinTone, bodyShape, hairStyle, hairColor, textScale, motionOff,
+        setupDone, rSeen, theme, skinTone, bodyShape, hairStyle, hairColor, wrapColor, textScale, motionOff,
+        reminderOn, reminderTime, medSchedule,
       });
     }, 600);
     return () => clearTimeout(timer);
-  }, [tPlan, tType, tChecked, rConsent, myConditions, myName, medHx, prepNotes, prepSpecialty, setupDone, rSeen, theme, skinTone, bodyShape, hairStyle, hairColor, textScale, motionOff, loaded]);
+  }, [tPlan, tType, tChecked, rConsent, myConditions, myName, medHx, prepNotes, prepSpecialty, setupDone, rSeen, theme, skinTone, bodyShape, hairStyle, hairColor, wrapColor, textScale, motionOff, reminderOn, reminderTime, medSchedule, loaded]);
 
 
 
@@ -945,6 +983,41 @@ export default function Whimsy() {
     const s = setTimeout(() => setSplash(false), 2400);
     return () => clearTimeout(s);
   }, []);
+
+  // Daily check-in reminder. True background push (a notification while the app/tab is fully
+  // closed) needs a server with VAPID keys, which is out of scope for this static app — so this
+  // is the honest version: while the app is open, once the chosen time has passed and today's
+  // page hasn't been saved yet, show an in-app banner, and also fire a real browser Notification
+  // if permission was granted (works even if Whimsy is just in a background tab).
+  const [reminderDue, setReminderDue] = useState(false);
+  useEffect(() => {
+    if (!loaded) return;
+    const check = () => {
+      if (!reminderOn) { setReminderDue(false); return; }
+      const now = new Date();
+      const [h, m] = reminderTime.split(":").map(Number);
+      const timeHasPassed = now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m);
+      const hasToday = entries.some((e) => e.date === todayStr());
+      setReminderDue(timeHasPassed && !hasToday);
+    };
+    check();
+    const id = setInterval(check, 60000);
+    return () => clearInterval(id);
+  }, [reminderOn, reminderTime, entries, loaded]);
+
+  useEffect(() => {
+    if (!reminderDue) return;
+    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+      try { new Notification("Whimsy", { body: "Time for today's check-in — how's your body today?", tag: "whimsy-daily" }); } catch (e) { /* ignore */ }
+    }
+  }, [reminderDue]);
+
+  const toggleReminder = async () => {
+    if (!reminderOn && typeof Notification !== "undefined" && Notification.permission === "default") {
+      try { await Notification.requestPermission(); } catch (e) { /* ignore */ }
+    }
+    setReminderOn(!reminderOn);
+  };
 
   const persist = async (next) => {
     setEntries(next);
@@ -1437,6 +1510,136 @@ export default function Whimsy() {
     { id: "toolkit", icon: BookOpen, label: "Toolkit" },
   ];
 
+  // Shared between the Toolkit "Appearance" accordion and the popup opened from the palette
+  // button on the body map, so the two entry points never drift out of sync.
+  const appearanceContent = (
+    <>
+      <p className="text-sm mb-4" style={{ color: COLORS.inkSoft }}>
+        Why be normal when you can be you? Make Whimsy look and feel like yours.
+      </p>
+
+      <p className={labelCls} style={{ color: COLORS.inkSoft }}>Accent color</p>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {THEMES.map((t) => (
+          <button key={t.key} onClick={() => setTheme(t.key)} aria-label={t.label}
+            className="rounded-full px-3.5 py-2 text-xs font-semibold flex items-center gap-2 focus:outline-none focus-visible:ring-2"
+            style={{ border: `2px solid ${theme === t.key ? t.plumDark : COLORS.line}`, background: theme === t.key ? t.pill : COLORS.card, color: COLORS.ink }}>
+            <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ background: `linear-gradient(135deg, ${t.plum}, ${t.plumDark})` }} />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <p className={labelCls} style={{ color: COLORS.inkSoft }}>Body map skin tone</p>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {SKIN_TONES.map((s) => (
+          <button key={s.key} onClick={() => setSkinTone(s.key)} aria-label={s.label}
+            className="w-9 h-9 rounded-full focus:outline-none focus-visible:ring-2 flex items-center justify-center"
+            style={{ background: s.fill, border: skinTone === s.key ? `3px solid ${COLORS.plumDark}` : `1px solid ${COLORS.line}` }}>
+            {skinTone === s.key && <Check size={14} color="#fff" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,0.5))" }} />}
+          </button>
+        ))}
+      </div>
+
+      <p className={labelCls} style={{ color: COLORS.inkSoft }}>Body type</p>
+      <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>The body map isn't one default shape. Pick whichever feels like you.</p>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {BODY_SHAPES.map((s) => (
+          <button key={s.key} onClick={() => setBodyShape(s.key)} aria-label={s.label} aria-pressed={bodyShape === s.key}
+            className="rounded-full px-3.5 py-2 text-xs font-semibold focus:outline-none focus-visible:ring-2"
+            style={{ border: `2px solid ${bodyShape === s.key ? COLORS.plumDark : COLORS.line}`, background: bodyShape === s.key ? COLORS.pill : COLORS.card, color: COLORS.ink }}>
+            {s.label.replace(" (default)", "")}
+          </button>
+        ))}
+      </div>
+
+      <p className={labelCls} style={{ color: COLORS.inkSoft }}>Hairstyle</p>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {HAIRSTYLES.map((h) => (
+          <button key={h.key} onClick={() => setHairStyle(h.key)} aria-label={h.label} aria-pressed={hairStyle === h.key}
+            className="rounded-full px-3.5 py-2 text-xs font-semibold focus:outline-none focus-visible:ring-2"
+            style={{ border: `2px solid ${hairStyle === h.key ? COLORS.plumDark : COLORS.line}`, background: hairStyle === h.key ? COLORS.pill : COLORS.card, color: COLORS.ink }}>
+            {h.label}
+          </button>
+        ))}
+      </div>
+
+      <p className={labelCls} style={{ color: COLORS.inkSoft }}>Hair color</p>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {HAIR_COLORS.map((h) => (
+          <button key={h.key} onClick={() => setHairColor(h.key)} aria-label={h.label}
+            className="w-9 h-9 rounded-full focus:outline-none focus-visible:ring-2 flex items-center justify-center"
+            style={{ background: h.hex, border: hairColor === h.key ? `3px solid ${COLORS.plumDark}` : `1px solid ${COLORS.line}` }}>
+            {hairColor === h.key && <Check size={14} color="#fff" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,0.6))" }} />}
+          </button>
+        ))}
+      </div>
+
+      {hairStyle === "headwrap" && (
+        <>
+          <p className={labelCls} style={{ color: COLORS.inkSoft }}>Wrap color</p>
+          <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>A headwrap is fabric, not hair — its own color, separate from hair color.</p>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {WRAP_COLORS.map((w) => (
+              <button key={w.key} onClick={() => setWrapColor(w.key)} aria-label={w.label}
+                className="w-9 h-9 rounded-full focus:outline-none focus-visible:ring-2 flex items-center justify-center"
+                style={{ background: w.hex, border: wrapColor === w.key ? `3px solid ${COLORS.plumDark}` : `1px solid ${COLORS.line}` }}>
+                {wrapColor === w.key && <Check size={14} color="#fff" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,0.6))" }} />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <p className={labelCls} style={{ color: COLORS.inkSoft }}>Text size</p>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {TEXT_SCALES.map((s) => (
+          <button key={s.key} onClick={() => setTextScale(s.key)}
+            className="rounded-2xl py-2.5 text-xs font-bold focus:outline-none focus-visible:ring-2"
+            style={{ border: `2px solid ${textScale === s.key ? COLORS.plumDark : COLORS.line}`, background: textScale === s.key ? COLORS.pill : COLORS.card, color: COLORS.ink }}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="rounded-2xl p-3.5 flex items-center justify-between" style={{ background: COLORS.bg, border: `1px solid ${COLORS.line}` }}>
+        <div className="pr-3">
+          <p className="text-sm font-bold">Reduce motion</p>
+          <p className="text-xs" style={{ color: COLORS.inkSoft }}>Turns off floating, swaying, and growing animations in-app, on top of your device's own motion setting.</p>
+        </div>
+        <button onClick={() => setMotionOff(!motionOff)} aria-label="Toggle reduce motion" aria-pressed={motionOff}
+          className="shrink-0 rounded-full p-1 focus:outline-none focus-visible:ring-2"
+          style={{ width: 46, height: 26, background: motionOff ? GRAD : COLORS.line }}>
+          <span className="block rounded-full bg-white" style={{ width: 18, height: 18, transform: motionOff ? "translateX(20px)" : "translateX(0)", transition: "transform .15s ease" }} />
+        </button>
+      </div>
+
+      <div className="rounded-2xl p-3.5 mt-3" style={{ background: COLORS.bg, border: `1px solid ${COLORS.line}` }}>
+        <div className="flex items-center justify-between">
+          <div className="pr-3">
+            <p className="text-sm font-bold">Daily check-in reminder</p>
+            <p className="text-xs" style={{ color: COLORS.inkSoft }}>
+              A nudge while Whimsy's open (or a browser notification, if allowed) if today's page is still blank past this time. No server involved — this only works while the app is open somewhere, not fully closed.
+            </p>
+          </div>
+          <button onClick={toggleReminder} aria-label="Toggle daily reminder" aria-pressed={reminderOn}
+            className="shrink-0 rounded-full p-1 focus:outline-none focus-visible:ring-2"
+            style={{ width: 46, height: 26, background: reminderOn ? GRAD : COLORS.line }}>
+            <span className="block rounded-full bg-white" style={{ width: 18, height: 18, transform: reminderOn ? "translateX(20px)" : "translateX(0)", transition: "transform .15s ease" }} />
+          </button>
+        </div>
+        {reminderOn && (
+          <div className="mt-3 flex items-center gap-2">
+            <Bell size={14} style={{ color: COLORS.plumDark }} />
+            <input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)}
+              className="rounded-xl px-3 py-2 text-sm font-semibold focus:outline-none focus-visible:ring-2"
+              style={{ background: COLORS.card, border: `1px solid ${COLORS.line}`, color: COLORS.ink }} />
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div className={motionOff ? "whimsy-root reduce-motion" : "whimsy-root"} style={{ background: "radial-gradient(900px 420px at -10% -5%, #F8DCE4 0%, rgba(248,220,228,0) 60%), radial-gradient(700px 360px at 110% -2%, #F4E4CE 0%, rgba(244,228,206,0) 55%), #FBF1EC", minHeight: "100vh", color: COLORS.ink, fontFamily: BODY }}>
       <style>{`
@@ -1602,6 +1805,26 @@ export default function Whimsy() {
           </div>
         </div>
       )}
+      {appearanceOpen && (
+        <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center p-4 tab-in"
+          onClick={() => setAppearanceOpen(false)}
+          role="dialog" aria-modal="true" aria-label="Appearance settings"
+          style={{ background: "rgba(87,31,51,0.28)", backdropFilter: "blur(3px)" }}>
+          <div className="w-full max-w-md rounded-3xl p-6 relative"
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: COLORS.card, border: `1px solid ${COLORS.line}`, boxShadow: "0 20px 60px rgba(87,31,51,0.25)", maxHeight: "88vh", overflowY: "auto" }}>
+            <div className="flex items-center justify-between mb-1">
+              <h2 style={{ fontFamily: SERIF, fontWeight: 700, fontSize: "1.2rem", color: COLORS.ink }}>Appearance</h2>
+              <button onClick={() => setAppearanceOpen(false)} aria-label="Close"
+                className="rounded-full p-2 focus:outline-none focus-visible:ring-2"
+                style={{ background: COLORS.pill, color: COLORS.plumDark }}>
+                <X size={16} />
+              </button>
+            </div>
+            {appearanceContent}
+          </div>
+        </div>
+      )}
       <div className="max-w-md mx-auto px-5 pb-44 pt-8">
 
         {/* App bar */}
@@ -1696,6 +1919,15 @@ export default function Whimsy() {
                 </button>
               </div>
             )}
+            {reminderDue && (
+              <div className="rounded-2xl px-4 py-3 mb-4 flex items-center gap-2.5" style={{ background: COLORS.pill, border: `1px solid ${COLORS.line}` }}>
+                <Bell size={16} style={{ color: COLORS.plumDark }} className="shrink-0" />
+                <p className="text-xs leading-relaxed flex-1" style={{ color: COLORS.ink }}>
+                  Your daily reminder: today's page is still blank.
+                </p>
+                <button onClick={() => setReminderDue(false)} aria-label="Dismiss" className="text-base font-bold leading-none focus:outline-none" style={{ color: COLORS.inkSoft }}>×</button>
+              </div>
+            )}
             {flareWatch && (
               <div className="rounded-3xl p-4 mb-4" style={{ background: "#FDF4F0", border: "1.5px dashed #E8B7C6" }}>
                 <p className="text-sm font-bold mb-1" style={{ fontFamily: SERIF, color: COLORS.ink }}>A gentle pattern notice</p>
@@ -1788,7 +2020,7 @@ export default function Whimsy() {
                 <span className="text-[11px]" style={{ color: COLORS.inkSoft }}>tap where it aches</span>
               </div>
               <BodyMap selected={painAreas} setSelected={setPainAreas} skin={activeSkin} shape={activeBodyShape} hairStyle={hairStyle} hairColorHex={activeHairColor.hex}
-                onOpenAppearance={() => { setTab("toolkit"); setOpenTool("appearance"); }} />
+                onOpenAppearance={() => setAppearanceOpen(true)} />
               {painAreas.length > 0 && (
                 <p className="text-xs mt-2 text-center" style={{ color: COLORS.plumDark, fontFamily: SERIF, fontStyle: "italic" }}>
                   {painAreas.map((k) => BODY_MAP.find((b) => b.k === k)?.label).filter(Boolean).join(", ")}
@@ -2437,89 +2669,7 @@ export default function Whimsy() {
 
             <GroupLabel>Make it yours</GroupLabel>
             <ToolCard id="appearance" icon={Sparkles} title="Appearance" subtitle="Colors, skin tone, text size, motion" open={openTool} setOpen={setOpenTool}>
-              <p className="text-sm mb-4" style={{ color: COLORS.inkSoft }}>
-                Why be normal when you can be you? Make Whimsy look and feel like yours.
-              </p>
-
-              <p className={labelCls} style={{ color: COLORS.inkSoft }}>Accent color</p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {THEMES.map((t) => (
-                  <button key={t.key} onClick={() => setTheme(t.key)} aria-label={t.label}
-                    className="rounded-full px-3.5 py-2 text-xs font-semibold flex items-center gap-2 focus:outline-none focus-visible:ring-2"
-                    style={{ border: `2px solid ${theme === t.key ? t.plumDark : COLORS.line}`, background: theme === t.key ? t.pill : COLORS.card, color: COLORS.ink }}>
-                    <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ background: `linear-gradient(135deg, ${t.plum}, ${t.plumDark})` }} />
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-
-              <p className={labelCls} style={{ color: COLORS.inkSoft }}>Body map skin tone</p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {SKIN_TONES.map((s) => (
-                  <button key={s.key} onClick={() => setSkinTone(s.key)} aria-label={s.label}
-                    className="w-9 h-9 rounded-full focus:outline-none focus-visible:ring-2 flex items-center justify-center"
-                    style={{ background: s.fill, border: skinTone === s.key ? `3px solid ${COLORS.plumDark}` : `1px solid ${COLORS.line}` }}>
-                    {skinTone === s.key && <Check size={14} color="#fff" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,0.5))" }} />}
-                  </button>
-                ))}
-              </div>
-
-              <p className={labelCls} style={{ color: COLORS.inkSoft }}>Body type</p>
-              <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>The body map isn't one default shape. Pick whichever feels like you.</p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {BODY_SHAPES.map((s) => (
-                  <button key={s.key} onClick={() => setBodyShape(s.key)} aria-label={s.label} aria-pressed={bodyShape === s.key}
-                    className="rounded-full px-3.5 py-2 text-xs font-semibold focus:outline-none focus-visible:ring-2"
-                    style={{ border: `2px solid ${bodyShape === s.key ? COLORS.plumDark : COLORS.line}`, background: bodyShape === s.key ? COLORS.pill : COLORS.card, color: COLORS.ink }}>
-                    {s.label.replace(" (default)", "")}
-                  </button>
-                ))}
-              </div>
-
-              <p className={labelCls} style={{ color: COLORS.inkSoft }}>Hairstyle</p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {HAIRSTYLES.map((h) => (
-                  <button key={h.key} onClick={() => setHairStyle(h.key)} aria-label={h.label} aria-pressed={hairStyle === h.key}
-                    className="rounded-full px-3.5 py-2 text-xs font-semibold focus:outline-none focus-visible:ring-2"
-                    style={{ border: `2px solid ${hairStyle === h.key ? COLORS.plumDark : COLORS.line}`, background: hairStyle === h.key ? COLORS.pill : COLORS.card, color: COLORS.ink }}>
-                    {h.label}
-                  </button>
-                ))}
-              </div>
-
-              <p className={labelCls} style={{ color: COLORS.inkSoft }}>Hair color</p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {HAIR_COLORS.map((h) => (
-                  <button key={h.key} onClick={() => setHairColor(h.key)} aria-label={h.label}
-                    className="w-9 h-9 rounded-full focus:outline-none focus-visible:ring-2 flex items-center justify-center"
-                    style={{ background: h.hex, border: hairColor === h.key ? `3px solid ${COLORS.plumDark}` : `1px solid ${COLORS.line}` }}>
-                    {hairColor === h.key && <Check size={14} color="#fff" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,0.6))" }} />}
-                  </button>
-                ))}
-              </div>
-
-              <p className={labelCls} style={{ color: COLORS.inkSoft }}>Text size</p>
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                {TEXT_SCALES.map((s) => (
-                  <button key={s.key} onClick={() => setTextScale(s.key)}
-                    className="rounded-2xl py-2.5 text-xs font-bold focus:outline-none focus-visible:ring-2"
-                    style={{ border: `2px solid ${textScale === s.key ? COLORS.plumDark : COLORS.line}`, background: textScale === s.key ? COLORS.pill : COLORS.card, color: COLORS.ink }}>
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="rounded-2xl p-3.5 flex items-center justify-between" style={{ background: COLORS.bg, border: `1px solid ${COLORS.line}` }}>
-                <div className="pr-3">
-                  <p className="text-sm font-bold">Reduce motion</p>
-                  <p className="text-xs" style={{ color: COLORS.inkSoft }}>Turns off floating, swaying, and growing animations in-app, on top of your device's own motion setting.</p>
-                </div>
-                <button onClick={() => setMotionOff(!motionOff)} aria-label="Toggle reduce motion" aria-pressed={motionOff}
-                  className="shrink-0 rounded-full p-1 focus:outline-none focus-visible:ring-2"
-                  style={{ width: 46, height: 26, background: motionOff ? GRAD : COLORS.line }}>
-                  <span className="block rounded-full bg-white" style={{ width: 18, height: 18, transform: motionOff ? "translateX(20px)" : "translateX(0)", transition: "transform .15s ease" }} />
-                </button>
-              </div>
+              {appearanceContent}
             </ToolCard>
 
             <GroupLabel>Navigate insurance</GroupLabel>
