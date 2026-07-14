@@ -3030,7 +3030,7 @@ function getHairOverlay(styleKey, hairColor) {
       // shoulder — no diagonal sweep across the head. Each braid is one solid, gently
       // tapered ribbon (filled, not a bundle of thin stroked lines, which read as messy wire
       // at any real size) with a few short twist ticks to hint at the plait without clutter.
-      const darkC = darken(hairColor, 0.35), lightC = lighten(hairColor, 0.18);
+      const darkC = darken(hairColor, 0.22), lightC = lighten(hairColor, 0.16);
       // frameX is where each strand actually frames the face, from the hairline (y=10) down.
       // The crown attachment (hidden under the opaque scalp cap) stays clustered near center
       // so there's no bald-looking gap at the top, then each strand fans back out to its
@@ -3047,21 +3047,21 @@ function getHairOverlay(styleKey, hairColor) {
         const wave = i % 2 === 0 ? 0.6 : -0.6;
         const crownX = 47.5 - i * 0.4;
         const anchorsL = [[crownX, 2], [crownX - 0.8, 5], [frameX + 1.2, 7.5], [frameX, 10], [frameX - flare * 0.35 + wave, midY], [frameX - flare * 0.75, midY + (endY - midY) * 0.6], [frameX - flare, endY]];
-        const { ribbon, ticks } = braidRibbon(anchorsL, { widthStart: 2.3, widthEnd: 1.1, twistTicks: 6 });
+        const { ribbon, ticks } = braidRibbon(anchorsL, { widthStart: 2.3, widthEnd: 1.4, twistTicks: 5 });
         above.push(
-          <path key={"braidL" + i} d={ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.25" strokeLinejoin="round" />,
-          <path key={"braidLsheen" + i} d={ribbon} fill="none" stroke={lightC} strokeWidth="0.2" opacity="0.4" strokeLinejoin="round" />,
+          <path key={"braidL" + i} d={ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.18" strokeLinejoin="round" />,
+          <path key={"braidLsheen" + i} d={ribbon} fill="none" stroke={lightC} strokeWidth="0.18" opacity="0.3" strokeLinejoin="round" />,
           ...ticks.map((t, ti) => (
-            <line key={"braidLtick" + i + ti} x1={t[0]} y1={t[1]} x2={t[2]} y2={t[3]} stroke={darkC} strokeWidth="0.35" opacity="0.55" strokeLinecap="round" />
+            <line key={"braidLtick" + i + ti} x1={t[0]} y1={t[1]} x2={t[2]} y2={t[3]} stroke={darkC} strokeWidth="0.22" opacity="0.3" strokeLinecap="round" />
           ))
         );
         const anchorsR = anchorsL.map(([x, y]) => [100 - x, y]);
-        const ribbonR = braidRibbon(anchorsR, { widthStart: 2.3, widthEnd: 1.1, twistTicks: 6 });
+        const ribbonR = braidRibbon(anchorsR, { widthStart: 2.3, widthEnd: 1.4, twistTicks: 5 });
         above.push(
-          <path key={"braidR" + i} d={ribbonR.ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.25" strokeLinejoin="round" />,
-          <path key={"braidRsheen" + i} d={ribbonR.ribbon} fill="none" stroke={lightC} strokeWidth="0.2" opacity="0.4" strokeLinejoin="round" />,
+          <path key={"braidR" + i} d={ribbonR.ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.18" strokeLinejoin="round" />,
+          <path key={"braidRsheen" + i} d={ribbonR.ribbon} fill="none" stroke={lightC} strokeWidth="0.18" opacity="0.3" strokeLinejoin="round" />,
           ...ribbonR.ticks.map((t, ti) => (
-            <line key={"braidRtick" + i + ti} x1={t[0]} y1={t[1]} x2={t[2]} y2={t[3]} stroke={darkC} strokeWidth="0.35" opacity="0.55" strokeLinecap="round" />
+            <line key={"braidRtick" + i + ti} x1={t[0]} y1={t[1]} x2={t[2]} y2={t[3]} stroke={darkC} strokeWidth="0.22" opacity="0.3" strokeLinecap="round" />
           ))
         );
       });
@@ -3078,7 +3078,7 @@ function getHairOverlay(styleKey, hairColor) {
       // Same center part and immediate face-framing as braids, then straight down: locs are
       // just thicker, solid-filled ribbons with fewer twist ticks (they twist more slowly and
       // read as thicker rope-like sections, not a bundle of thin wiry lines).
-      const darkC = darken(hairColor, 0.3), lightC = lighten(hairColor, 0.15);
+      const darkC = darken(hairColor, 0.2), lightC = lighten(hairColor, 0.14);
       // Same crown-tight / hairline-fan-out logic as braids: the top stays clustered near
       // center (covered by the opaque scalp cap, so no bald gap), then each strand fans back
       // out to its real framing width by the hairline so the face stays clear.
@@ -3092,21 +3092,21 @@ function getHairOverlay(styleKey, hairColor) {
         const wave = i % 2 === 0 ? 0.7 : -0.7;
         const crownX = 47 - i * 0.5;
         const anchorsL = [[crownX, 2.5], [crownX - 1, 6], [frameX + 1.4, 8.5], [frameX, 11], [frameX - flare * 0.35 + wave, midY], [frameX - flare * 0.75, midY + (len - midY) * 0.6], [frameX - flare, len]];
-        const { ribbon, ticks } = braidRibbon(anchorsL, { widthStart: 3, widthEnd: 1.7, twistTicks: 4 });
+        const { ribbon, ticks } = braidRibbon(anchorsL, { widthStart: 3, widthEnd: 2, twistTicks: 3 });
         above.push(
-          <path key={"locL" + i} d={ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.3" strokeLinejoin="round" />,
-          <path key={"locLsheen" + i} d={ribbon} fill="none" stroke={lightC} strokeWidth="0.25" opacity="0.4" strokeLinejoin="round" />,
+          <path key={"locL" + i} d={ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.2" strokeLinejoin="round" />,
+          <path key={"locLsheen" + i} d={ribbon} fill="none" stroke={lightC} strokeWidth="0.2" opacity="0.3" strokeLinejoin="round" />,
           ...ticks.map((t, ti) => (
-            <line key={"locLtick" + i + ti} x1={t[0]} y1={t[1]} x2={t[2]} y2={t[3]} stroke={darkC} strokeWidth="0.45" opacity="0.5" strokeLinecap="round" />
+            <line key={"locLtick" + i + ti} x1={t[0]} y1={t[1]} x2={t[2]} y2={t[3]} stroke={darkC} strokeWidth="0.3" opacity="0.28" strokeLinecap="round" />
           ))
         );
         const anchorsR = anchorsL.map(([x, y]) => [100 - x, y]);
-        const ribbonR = braidRibbon(anchorsR, { widthStart: 3, widthEnd: 1.7, twistTicks: 4 });
+        const ribbonR = braidRibbon(anchorsR, { widthStart: 3, widthEnd: 2, twistTicks: 3 });
         above.push(
-          <path key={"locR" + i} d={ribbonR.ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.3" strokeLinejoin="round" />,
-          <path key={"locRsheen" + i} d={ribbonR.ribbon} fill="none" stroke={lightC} strokeWidth="0.25" opacity="0.4" strokeLinejoin="round" />,
+          <path key={"locR" + i} d={ribbonR.ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.2" strokeLinejoin="round" />,
+          <path key={"locRsheen" + i} d={ribbonR.ribbon} fill="none" stroke={lightC} strokeWidth="0.2" opacity="0.3" strokeLinejoin="round" />,
           ...ribbonR.ticks.map((t, ti) => (
-            <line key={"locRtick" + i + ti} x1={t[0]} y1={t[1]} x2={t[2]} y2={t[3]} stroke={darkC} strokeWidth="0.45" opacity="0.5" strokeLinecap="round" />
+            <line key={"locRtick" + i + ti} x1={t[0]} y1={t[1]} x2={t[2]} y2={t[3]} stroke={darkC} strokeWidth="0.3" opacity="0.28" strokeLinecap="round" />
           ))
         );
       });
@@ -3143,7 +3143,14 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
   // and not one fixed black for every tone. This means it naturally scales with the tone
   // picked: the light blush default gets a dark dusty-pink line, and deep skin gets a line
   // dark enough to read as black, without ever needing a special case per tone.
-  const feature = darken(skinFill, 0.5);
+  const feature = darken(skinFill, 0.38);
+  // A gentler, warmer line for the most delicate facial detail (brows, eyelids, nose bridge)
+  // — full-strength `feature` reads as sculpted on the body outline and jaw, but was too
+  // harsh/inky for the softer, rounder look of a friendly illustrated face.
+  const soft = mixHex(feature, skinFill, 0.4);
+  const iris = mixHex(feature, "#8B5A2B", 0.5);
+  const lip = mixHex(COLORS.plum, skinFill, 0.3);
+  const lipLine = mixHex(COLORS.plumDark, skinFill, 0.35);
   const scaleX = shape?.scaleX ?? 1;
   const hair = getHairOverlay(hairStyle, hairColorHex || "#3B2417");
   return (
@@ -3202,47 +3209,47 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
             <g style={{ pointerEvents: "none" }}>{hair.scalp}</g>
             {view === "front" ? (
               <g style={{ pointerEvents: "none" }}>
-                {/* cheekbone/jaw contour, using the tone's higher-contrast feature color so it reads as sculpted rather than flat */}
+                {/* cheekbone/jaw contour — soft and low-contrast, just a hint of sculpting rather than a hard line */}
+                <g opacity="0.32">
+                  <path d="M41 10.5 Q39 15 40.5 19.5 Q41.5 22.5 43.5 25" fill="none" stroke={soft} strokeWidth="0.45" strokeLinecap="round" />
+                  <path d="M59 10.5 Q61 15 59.5 19.5 Q58.5 22.5 56.5 25" fill="none" stroke={soft} strokeWidth="0.45" strokeLinecap="round" />
+                </g>
+                {/* thin, gently arched brows — soft warm tone, not a harsh dark stroke */}
+                <g opacity="0.55">
+                  <path d="M43.3 11.7 Q45.4 10.5 47.6 11.5" fill="none" stroke={soft} strokeWidth="0.4" strokeLinecap="round" />
+                  <path d="M52.4 11.5 Q54.6 10.5 56.7 11.7" fill="none" stroke={soft} strokeWidth="0.4" strokeLinecap="round" />
+                </g>
+                {/* big, round, warm brown eyes — soft lid line, a warm iris (not stark black), gentle pupil and glint */}
+                <g>
+                  <path d="M42.8 14 Q45.4 11.7 48 14 Q45.4 15.8 42.8 14 Z" fill="#FFFBF6" opacity="0.95" />
+                  <path d="M42.8 14 Q45.4 11.7 48 14 Q45.4 15.8 42.8 14 Z" fill="none" stroke={soft} strokeWidth="0.35" opacity="0.6" />
+                  <path d="M52 14 Q54.6 11.7 57.2 14 Q54.6 15.8 52 14 Z" fill="#FFFBF6" opacity="0.95" />
+                  <path d="M52 14 Q54.6 11.7 57.2 14 Q54.6 15.8 52 14 Z" fill="none" stroke={soft} strokeWidth="0.35" opacity="0.6" />
+                  <circle cx="45.4" cy="14.1" r="1.15" fill={iris} opacity="0.92" />
+                  <circle cx="54.6" cy="14.1" r="1.15" fill={iris} opacity="0.92" />
+                  <circle cx="45.4" cy="14.1" r="0.5" fill="#241708" opacity="0.9" />
+                  <circle cx="54.6" cy="14.1" r="0.5" fill="#241708" opacity="0.9" />
+                  <circle cx="45.75" cy="13.65" r="0.25" fill="#fff" opacity="0.95" />
+                  <circle cx="54.95" cy="13.65" r="0.25" fill="#fff" opacity="0.95" />
+                  <path d="M46.9 13.1 L47.7 12.3" stroke={soft} strokeWidth="0.3" strokeLinecap="round" opacity="0.4" />
+                  <path d="M53.1 13.1 L52.3 12.3" stroke={soft} strokeWidth="0.3" strokeLinecap="round" opacity="0.4" />
+                </g>
+                {/* nose: small and soft, mostly a gentle shadow rather than a drawn line */}
                 <g opacity="0.5">
-                  <path d="M41 10.5 Q39 15 40.5 19.5 Q41.5 22.5 43.5 25" fill="none" stroke={feature} strokeWidth="0.5" strokeLinecap="round" />
-                  <path d="M59 10.5 Q61 15 59.5 19.5 Q58.5 22.5 56.5 25" fill="none" stroke={feature} strokeWidth="0.5" strokeLinecap="round" />
+                  <path d="M49.6 13.9 Q49.1 16.9 49.3 18.4" fill="none" stroke={soft} strokeWidth="0.4" strokeLinecap="round" />
+                  <path d="M47.7 18.7 Q47.4 19.5 48.2 19.9 Q49 20.3 50 20 Q51 20.3 51.8 19.9 Q52.6 19.5 52.3 18.7 Q51.2 19.7 50 19.4 Q48.8 19.7 47.7 18.7 Z"
+                    fill={skinFill} stroke={soft} strokeWidth="0.35" />
                 </g>
-                {/* thin, subtle brows, closer to a neutral resting face than a cartoon arch — dark ink, not the pink theme color, so only the lips read as pink */}
-                <g opacity="0.7">
-                  <path d="M43.5 11.6 Q45.4 10.7 47.4 11.4" fill="none" stroke={feature} strokeWidth="0.45" strokeLinecap="round" />
-                  <path d="M52.6 11.4 Q54.6 10.7 56.5 11.6" fill="none" stroke={feature} strokeWidth="0.45" strokeLinecap="round" />
-                </g>
-                {/* actual open eyes: lid outline with a visible white, iris, pupil and glint, not just a dot — dark ink, not the pink theme color */}
+                {/* full, soft rounded lips — a muted rosy tone blended with the skin rather than a bright saturated pink */}
                 <g>
-                  <path d="M43.2 13.9 Q45.4 12.1 47.6 13.9 Q45.4 15.3 43.2 13.9 Z" fill="#FFF9F4" opacity="0.9" />
-                  <path d="M43.2 13.9 Q45.4 12.1 47.6 13.9 Q45.4 15.3 43.2 13.9 Z" fill="none" stroke={feature} strokeWidth="0.45" opacity="0.85" />
-                  <path d="M52.4 13.9 Q54.6 12.1 56.8 13.9 Q54.6 15.3 52.4 13.9 Z" fill="#FFF9F4" opacity="0.9" />
-                  <path d="M52.4 13.9 Q54.6 12.1 56.8 13.9 Q54.6 15.3 52.4 13.9 Z" fill="none" stroke={feature} strokeWidth="0.45" opacity="0.85" />
-                  <circle cx="45.4" cy="14" r="1" fill={feature} opacity="0.9" />
-                  <circle cx="54.6" cy="14" r="1" fill={feature} opacity="0.9" />
-                  <circle cx="45.4" cy="14" r="0.45" fill="#1A1210" opacity="0.95" />
-                  <circle cx="54.6" cy="14" r="0.45" fill="#1A1210" opacity="0.95" />
-                  <circle cx="45.7" cy="13.6" r="0.22" fill="#fff" opacity="0.95" />
-                  <circle cx="54.9" cy="13.6" r="0.22" fill="#fff" opacity="0.95" />
-                  <path d="M46.9 13 L47.8 12.1" stroke={feature} strokeWidth="0.4" strokeLinecap="round" opacity="0.65" />
-                  <path d="M53.1 13 L52.2 12.1" stroke={feature} strokeWidth="0.4" strokeLinecap="round" opacity="0.65" />
+                  <path d="M46.2 21.6 Q47.9 20.6 49 21.3 Q50 20.9 51 21.3 Q52.1 20.6 53.8 21.6 Q50 22.4 46.2 21.6 Z"
+                    fill={lip} opacity="0.85" stroke={lipLine} strokeWidth="0.25" />
+                  <path d="M46.2 21.6 Q50 24.6 53.8 21.6 Q50 23.4 46.2 21.6 Z"
+                    fill={lip} opacity="0.92" stroke={lipLine} strokeWidth="0.3" />
+                  <path d="M46.2 21.6 L53.8 21.6" stroke={lipLine} strokeWidth="0.25" opacity="0.35" />
                 </g>
-                {/* nose: a real bridge plus a wider rounded tip with nostril wings, sized to actually read as a nose */}
-                <g opacity="0.95">
-                  <path d="M49.6 13.9 Q49 16.9 49.2 18.4" fill="none" stroke={feature} strokeWidth="0.55" strokeLinecap="round" />
-                  <path d="M47.6 18.7 Q47.3 19.6 48.1 20 Q49 20.5 50 20.1 Q51 20.5 51.9 20 Q52.7 19.6 52.4 18.7 Q51.2 19.9 50 19.6 Q48.8 19.9 47.6 18.7 Z"
-                    fill={skinFill} stroke={feature} strokeWidth="0.5" />
-                </g>
-                {/* full, symmetric lips sitting below the nose: a defined cupid's bow, a fuller rounded lower lip, both filled */}
-                <g>
-                  <path d="M46 21.6 Q47.8 20.5 49 21.3 Q50 20.8 51 21.3 Q52.2 20.5 54 21.6 Q50 22.5 46 21.6 Z"
-                    fill={COLORS.plum} opacity="0.6" stroke={COLORS.plumDark} strokeWidth="0.3" />
-                  <path d="M46 21.6 Q50 25 54 21.6 Q50 23.6 46 21.6 Z"
-                    fill={COLORS.plum} opacity="0.78" stroke={COLORS.plumDark} strokeWidth="0.35" />
-                  <path d="M46 21.6 L54 21.6" stroke={COLORS.plumDark} strokeWidth="0.35" opacity="0.5" />
-                </g>
-                {/* jawline: a defined contour from cheek through the chin, so the head reads as a real face shape */}
-                <path d="M43.5 24.5 Q46.3 28.2 50 28.9 Q53.7 28.2 56.5 24.5" fill="none" stroke={feature} strokeWidth="0.6" strokeLinecap="round" opacity="0.55" />
+                {/* jawline: a soft contour from cheek through the chin, just enough to read as a real face shape without a hard line */}
+                <path d="M43.5 24.5 Q46.3 28.2 50 28.9 Q53.7 28.2 56.5 24.5" fill="none" stroke={soft} strokeWidth="0.45" strokeLinecap="round" opacity="0.4" />
                 {/* collarbone hint just below the neck */}
                 <path d="M40 38.5 Q50 41 60 38.5" fill="none" stroke={feature} strokeWidth="0.5" opacity="0.4" />
                 {/* fuller, rounder bust with an underbust curve, set into the chest rather than floating on it */}
