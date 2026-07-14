@@ -3031,12 +3031,22 @@ function getHairOverlay(styleKey, hairColor) {
       // tapered ribbon (filled, not a bundle of thin stroked lines, which read as messy wire
       // at any real size) with a few short twist ticks to hint at the plait without clutter.
       const darkC = darken(hairColor, 0.35), lightC = lighten(hairColor, 0.18);
-      const starts = [46, 43.9, 41.8, 39.7, 37.6, 35.5];
-      starts.forEach((x0, i) => {
-        const endY = 42 + (i % 3) * 5;
+      // frameX is where each strand actually frames the face, from the hairline (y=10) down.
+      // The crown attachment (hidden under the opaque scalp cap) stays clustered near center
+      // so there's no bald-looking gap at the top, then each strand fans back out to its
+      // frame position by the hairline — so the part reads full up top without the hair
+      // itself curtaining over the face.
+      const frames = [42, 40.4, 38.8, 37.2, 35.6, 34];
+      frames.forEach((frameX, i) => {
+        // Shoulder-length, not long: the outer strands run a bit longer and flare out a
+        // bit further than the inner ones, so the whole bunch reads as a flowy triangle
+        // (narrow at the part, widening toward the ends) instead of parallel straight lines.
+        const endY = 24 + i * 3;
         const midY = (10 + endY) / 2;
-        const drift = 0.6 + i * 0.15; // barely any horizontal travel — reads as hanging straight down
-        const anchorsL = [[x0 + 0.6, 3.5], [x0 + 0.3, 6], [x0, 8], [x0, 10], [x0 - drift * 0.3, midY], [x0 - drift * 0.7, midY + 5], [x0 - drift, endY]];
+        const flare = 1 + i * 1.6;
+        const wave = i % 2 === 0 ? 0.6 : -0.6;
+        const crownX = 47.5 - i * 0.4;
+        const anchorsL = [[crownX, 2], [crownX - 0.8, 5], [frameX + 1.2, 7.5], [frameX, 10], [frameX - flare * 0.35 + wave, midY], [frameX - flare * 0.75, midY + (endY - midY) * 0.6], [frameX - flare, endY]];
         const { ribbon, ticks } = braidRibbon(anchorsL, { widthStart: 2.3, widthEnd: 1.1, twistTicks: 6 });
         above.push(
           <path key={"braidL" + i} d={ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.25" strokeLinejoin="round" />,
@@ -3069,12 +3079,19 @@ function getHairOverlay(styleKey, hairColor) {
       // just thicker, solid-filled ribbons with fewer twist ticks (they twist more slowly and
       // read as thicker rope-like sections, not a bundle of thin wiry lines).
       const darkC = darken(hairColor, 0.3), lightC = lighten(hairColor, 0.15);
-      const starts = [45.5, 43.3, 41.1, 38.9, 36.7];
-      starts.forEach((x0, i) => {
-        const len = 46 + (i % 3) * 6;
+      // Same crown-tight / hairline-fan-out logic as braids: the top stays clustered near
+      // center (covered by the opaque scalp cap, so no bald gap), then each strand fans back
+      // out to its real framing width by the hairline so the face stays clear.
+      const frames = [41.5, 39.7, 38, 36.3, 34.6];
+      frames.forEach((frameX, i) => {
+        // Same flowy-triangle idea as braids, just a touch longer and thicker since locs read
+        // heavier: shoulder-to-upper-chest length, flaring wider toward the outer locs.
+        const len = 26 + i * 3.5;
         const midY = (11 + len) / 2;
-        const drift = 0.7 + i * 0.2; // barely any horizontal travel — hangs straight down
-        const anchorsL = [[x0 + 0.7, 4], [x0 + 0.3, 6.5], [x0, 9], [x0, 11], [x0 - drift * 0.3, midY], [x0 - drift * 0.7, midY + 6], [x0 - drift, len]];
+        const flare = 1.2 + i * 2;
+        const wave = i % 2 === 0 ? 0.7 : -0.7;
+        const crownX = 47 - i * 0.5;
+        const anchorsL = [[crownX, 2.5], [crownX - 1, 6], [frameX + 1.4, 8.5], [frameX, 11], [frameX - flare * 0.35 + wave, midY], [frameX - flare * 0.75, midY + (len - midY) * 0.6], [frameX - flare, len]];
         const { ribbon, ticks } = braidRibbon(anchorsL, { widthStart: 3, widthEnd: 1.7, twistTicks: 4 });
         above.push(
           <path key={"locL" + i} d={ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.3" strokeLinejoin="round" />,
