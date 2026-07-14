@@ -2927,23 +2927,24 @@ function bezPt(p0, p1, p2, p3, t) {
   ];
 }
 
-// A real 3-strand plait works by repeatedly crossing the outer strands over the middle
-// one, which is what actually produces the rope-like alternating texture of braided or
-// loc'd hair — a single smooth stroke can't read as "braided," it just reads as a limp
-// line. This samples a strand's two-segment bezier centerline, then offsets two paths
-// (a lighter strand and a darker strand) to opposite sides of the centerline in a sine
-// wave, so they cross back and forth exactly like alternating which strand is "on top,"
-// giving each braid/loc a visible twist instead of a flat line.
-function braidTwistPaths(anchors, opts = {}) {
-  const { twists = 4.5, amp = 0.85, samples = 22 } = opts;
+// A braid/loc needs to read as one solid, neatly plaited section of hair — not a bundle of
+// thin overlapping stroked lines, which end up looking wiry and messy at any real size.
+// This samples a strand's two-segment bezier centerline, then builds a single SOLID, gently
+// tapered ribbon shape around it (filled, not stroked), plus a handful of short diagonal
+// "twist" ticks laid across the ribbon at intervals to hint at the alternating plait texture
+// without cluttering the silhouette.
+function braidRibbon(anchors, opts = {}) {
+  const { widthStart = 2.2, widthEnd = 1.1, samples = 26, twistTicks = 6 } = opts;
   const [p0, c1, c2, p1, c3, c4, p2] = anchors;
   const pts = [];
   for (let i = 0; i <= samples; i++) {
     const t = i / samples;
     pts.push(t <= 0.5 ? bezPt(p0, c1, c2, p1, t / 0.5) : bezPt(p1, c3, c4, p2, (t - 0.5) / 0.5));
   }
-  const lightPts = [];
-  const darkPts = [];
+  const left = [];
+  const right = [];
+  const ticks = [];
+  const tickEvery = Math.max(2, Math.round(pts.length / twistTicks));
   for (let i = 0; i < pts.length; i++) {
     const [x, y] = pts[i];
     const prev = pts[Math.max(0, i - 1)];
@@ -2952,19 +2953,18 @@ function braidTwistPaths(anchors, opts = {}) {
     const len = Math.hypot(dx, dy) || 1;
     const nx = -dy / len, ny = dx / len;
     const t = i / (pts.length - 1);
-    const wig = Math.sin(t * Math.PI * twists) * amp;
-    lightPts.push([x + nx * wig, y + ny * wig]);
-    darkPts.push([x - nx * wig, y - ny * wig]);
+    const w = widthStart + (widthEnd - widthStart) * t;
+    left.push([x + nx * w, y + ny * w]);
+    right.push([x - nx * w, y - ny * w]);
+    if (i > 0 && i < pts.length - 1 && i % tickEvery === 0) {
+      ticks.push([x - nx * w * 0.75, y - ny * w * 0.75, x + nx * w * 0.75, y + ny * w * 0.75]);
+    }
   }
-  const toPath = (arr) => arr.map((p, i) => (i === 0 ? `M${p[0].toFixed(2)} ${p[1].toFixed(2)}` : `L${p[0].toFixed(2)} ${p[1].toFixed(2)}`)).join(" ");
-  return { light: toPath(lightPts), dark: toPath(darkPts) };
-}
-
-// Raw centerline of the same anchors, used as a soft, wide "volume" pass underneath the
-// twist lines so each braid/loc reads as a fuller section of hair, not a wire-thin line.
-function anchorsToPath(anchors) {
-  const [p0, c1, c2, p1, c3, c4, p2] = anchors;
-  return `M${p0[0]} ${p0[1]} C${c1[0]} ${c1[1]} ${c2[0]} ${c2[1]} ${p1[0]} ${p1[1]} C${c3[0]} ${c3[1]} ${c4[0]} ${c4[1]} ${p2[0]} ${p2[1]}`;
+  const fmt = (p) => `${p[0].toFixed(2)} ${p[1].toFixed(2)}`;
+  const ribbon =
+    "M" + left.map(fmt).join(" L") +
+    " L" + right.slice().reverse().map(fmt).join(" L") + " Z";
+  return { ribbon, ticks };
 }
 
 // Renders the chosen hairstyle as three layers: "behind" paints before the head silhouette
@@ -3027,32 +3027,32 @@ function getHairOverlay(styleKey, hairColor) {
     case "braids": {
       // Parted at the center, each strand starts already offset out at the hairline (framing
       // the face from the very top) and then hangs essentially straight down past the
-      // shoulder — no diagonal sweep across the head. Each strand is rendered as an actual
-      // plait: a real 3-strand braid works by repeatedly crossing the outer sections over the
-      // middle one, which is what produces its rope-like texture — so instead of one flat
-      // line, each braid is two offset strands (a lit side and a shadow side) that visibly
-      // cross back and forth along its length, plus a soft wide "volume" pass underneath for
-      // fullness.
-      const lightC = lighten(hairColor, 0.3), darkC = darken(hairColor, 0.35);
+      // shoulder — no diagonal sweep across the head. Each braid is one solid, gently
+      // tapered ribbon (filled, not a bundle of thin stroked lines, which read as messy wire
+      // at any real size) with a few short twist ticks to hint at the plait without clutter.
+      const darkC = darken(hairColor, 0.35), lightC = lighten(hairColor, 0.18);
       const starts = [42, 40.4, 38.8, 37.2, 35.6, 34];
       starts.forEach((x0, i) => {
         const endY = 42 + (i % 3) * 5;
         const midY = (10 + endY) / 2;
         const drift = 0.6 + i * 0.15; // barely any horizontal travel — reads as hanging straight down
         const anchorsL = [[x0 + 1.2, 2], [x0 + 0.4, 5.5], [x0, 8], [x0, 10], [x0 - drift * 0.3, midY], [x0 - drift * 0.7, midY + 5], [x0 - drift, endY]];
-        const twistL = braidTwistPaths(anchorsL, { twists: 4.5 + (i % 2), amp: 0.9 });
+        const { ribbon, ticks } = braidRibbon(anchorsL, { widthStart: 2.3, widthEnd: 1.1, twistTicks: 6 });
         above.push(
-          <path key={"braidL" + i + "v"} d={anchorsToPath(anchorsL)} stroke={hairColor} strokeWidth="2.1" fill="none" opacity="0.4" strokeLinecap="round" />,
-          <path key={"braidL" + i + "d"} d={twistL.dark} stroke={darkC} strokeWidth="1.1" fill="none" opacity="0.6" strokeLinecap="round" strokeLinejoin="round" />,
-          <path key={"braidL" + i + "l"} d={twistL.light} stroke={lightC} strokeWidth="1.1" fill="none" opacity="0.65" strokeLinecap="round" strokeLinejoin="round" />
+          <path key={"braidL" + i} d={ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.25" strokeLinejoin="round" />,
+          <path key={"braidLsheen" + i} d={ribbon} fill="none" stroke={lightC} strokeWidth="0.2" opacity="0.4" strokeLinejoin="round" />,
+          ...ticks.map((t, ti) => (
+            <line key={"braidLtick" + i + ti} x1={t[0]} y1={t[1]} x2={t[2]} y2={t[3]} stroke={darkC} strokeWidth="0.35" opacity="0.55" strokeLinecap="round" />
+          ))
         );
-        const x0r = 100 - x0;
         const anchorsR = anchorsL.map(([x, y]) => [100 - x, y]);
-        const twistR = braidTwistPaths(anchorsR, { twists: 4.5 + (i % 2), amp: 0.9 });
+        const ribbonR = braidRibbon(anchorsR, { widthStart: 2.3, widthEnd: 1.1, twistTicks: 6 });
         above.push(
-          <path key={"braidR" + i + "v"} d={anchorsToPath(anchorsR)} stroke={hairColor} strokeWidth="2.1" fill="none" opacity="0.4" strokeLinecap="round" />,
-          <path key={"braidR" + i + "d"} d={twistR.dark} stroke={darkC} strokeWidth="1.1" fill="none" opacity="0.6" strokeLinecap="round" strokeLinejoin="round" />,
-          <path key={"braidR" + i + "l"} d={twistR.light} stroke={lightC} strokeWidth="1.1" fill="none" opacity="0.65" strokeLinecap="round" strokeLinejoin="round" />
+          <path key={"braidR" + i} d={ribbonR.ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.25" strokeLinejoin="round" />,
+          <path key={"braidRsheen" + i} d={ribbonR.ribbon} fill="none" stroke={lightC} strokeWidth="0.2" opacity="0.4" strokeLinejoin="round" />,
+          ...ribbonR.ticks.map((t, ti) => (
+            <line key={"braidRtick" + i + ti} x1={t[0]} y1={t[1]} x2={t[2]} y2={t[3]} stroke={darkC} strokeWidth="0.35" opacity="0.55" strokeLinecap="round" />
+          ))
         );
       });
       break;
@@ -3065,28 +3065,32 @@ function getHairOverlay(styleKey, hairColor) {
       break;
     }
     case "locs": {
-      // Same center part and immediate face-framing as braids, then straight down: locs
-      // are thicker and twist more slowly (fewer, longer twists per strand), using the same
-      // real cross-over rendering, with a wider volume pass so each section reads as thick.
-      const lightC = lighten(hairColor, 0.25), darkC = darken(hairColor, 0.3);
+      // Same center part and immediate face-framing as braids, then straight down: locs are
+      // just thicker, solid-filled ribbons with fewer twist ticks (they twist more slowly and
+      // read as thicker rope-like sections, not a bundle of thin wiry lines).
+      const darkC = darken(hairColor, 0.3), lightC = lighten(hairColor, 0.15);
       const starts = [41.5, 39.7, 38, 36.3, 34.6];
       starts.forEach((x0, i) => {
         const len = 46 + (i % 3) * 6;
         const midY = (11 + len) / 2;
         const drift = 0.7 + i * 0.2; // barely any horizontal travel — hangs straight down
         const anchorsL = [[x0 + 1.4, 2.5], [x0 + 0.5, 6], [x0, 9], [x0, 11], [x0 - drift * 0.3, midY], [x0 - drift * 0.7, midY + 6], [x0 - drift, len]];
-        const twistL = braidTwistPaths(anchorsL, { twists: 2.5, amp: 0.65 });
+        const { ribbon, ticks } = braidRibbon(anchorsL, { widthStart: 3, widthEnd: 1.7, twistTicks: 4 });
         above.push(
-          <path key={"locL" + i + "v"} d={anchorsToPath(anchorsL)} stroke={hairColor} strokeWidth="2.9" fill="none" opacity="0.45" strokeLinecap="round" />,
-          <path key={"locL" + i + "d"} d={twistL.dark} stroke={darkC} strokeWidth="1.5" fill="none" opacity="0.6" strokeLinecap="round" strokeLinejoin="round" />,
-          <path key={"locL" + i + "l"} d={twistL.light} stroke={lightC} strokeWidth="1.5" fill="none" opacity="0.55" strokeLinecap="round" strokeLinejoin="round" />
+          <path key={"locL" + i} d={ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.3" strokeLinejoin="round" />,
+          <path key={"locLsheen" + i} d={ribbon} fill="none" stroke={lightC} strokeWidth="0.25" opacity="0.4" strokeLinejoin="round" />,
+          ...ticks.map((t, ti) => (
+            <line key={"locLtick" + i + ti} x1={t[0]} y1={t[1]} x2={t[2]} y2={t[3]} stroke={darkC} strokeWidth="0.45" opacity="0.5" strokeLinecap="round" />
+          ))
         );
         const anchorsR = anchorsL.map(([x, y]) => [100 - x, y]);
-        const twistR = braidTwistPaths(anchorsR, { twists: 2.5, amp: 0.65 });
+        const ribbonR = braidRibbon(anchorsR, { widthStart: 3, widthEnd: 1.7, twistTicks: 4 });
         above.push(
-          <path key={"locR" + i + "v"} d={anchorsToPath(anchorsR)} stroke={hairColor} strokeWidth="2.9" fill="none" opacity="0.45" strokeLinecap="round" />,
-          <path key={"locR" + i + "d"} d={twistR.dark} stroke={darkC} strokeWidth="1.5" fill="none" opacity="0.6" strokeLinecap="round" strokeLinejoin="round" />,
-          <path key={"locR" + i + "l"} d={twistR.light} stroke={lightC} strokeWidth="1.5" fill="none" opacity="0.55" strokeLinecap="round" strokeLinejoin="round" />
+          <path key={"locR" + i} d={ribbonR.ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.3" strokeLinejoin="round" />,
+          <path key={"locRsheen" + i} d={ribbonR.ribbon} fill="none" stroke={lightC} strokeWidth="0.25" opacity="0.4" strokeLinejoin="round" />,
+          ...ribbonR.ticks.map((t, ti) => (
+            <line key={"locRtick" + i + ti} x1={t[0]} y1={t[1]} x2={t[2]} y2={t[3]} stroke={darkC} strokeWidth="0.45" opacity="0.5" strokeLinecap="round" />
+          ))
         );
       });
       break;
