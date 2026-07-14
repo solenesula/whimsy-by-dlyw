@@ -2982,7 +2982,7 @@ function getHairOverlay(styleKey, hairColor) {
     scalp.push(
       <path key="scalp-base"
         d="M37.4 13.5 C37.6 7.6 43 2.3 50 2.3 C57 2.3 62.4 7.6 62.6 13.5 C62.7 16.3 61.9 18.9 60.4 20.8 C60.7 15.8 59 10.5 55 7.8 C51.9 9.5 48.1 9.5 45 7.8 C41 10.5 39.3 15.8 39.6 20.8 C38.1 18.9 37.3 16.3 37.4 13.5 Z"
-        fill={hairColor} opacity="0.55" />,
+        fill={hairColor} opacity="0.92" />,
       // "edges": small laid baby-hair swirls right at the hairline, at the center part and
       // both temples, the way edges get gelled down and curled rather than left loose.
       <path key="edge-center" d="M48.3 7.6 Q49.8 6 51.4 7.3 Q51.6 8.5 50.4 9 Q49 9.2 48.5 8.3 Q48.2 7.9 48.3 7.6 Z"
@@ -3031,12 +3031,12 @@ function getHairOverlay(styleKey, hairColor) {
       // tapered ribbon (filled, not a bundle of thin stroked lines, which read as messy wire
       // at any real size) with a few short twist ticks to hint at the plait without clutter.
       const darkC = darken(hairColor, 0.35), lightC = lighten(hairColor, 0.18);
-      const starts = [42, 40.4, 38.8, 37.2, 35.6, 34];
+      const starts = [46, 43.9, 41.8, 39.7, 37.6, 35.5];
       starts.forEach((x0, i) => {
         const endY = 42 + (i % 3) * 5;
         const midY = (10 + endY) / 2;
         const drift = 0.6 + i * 0.15; // barely any horizontal travel — reads as hanging straight down
-        const anchorsL = [[x0 + 1.2, 2], [x0 + 0.4, 5.5], [x0, 8], [x0, 10], [x0 - drift * 0.3, midY], [x0 - drift * 0.7, midY + 5], [x0 - drift, endY]];
+        const anchorsL = [[x0 + 0.6, 3.5], [x0 + 0.3, 6], [x0, 8], [x0, 10], [x0 - drift * 0.3, midY], [x0 - drift * 0.7, midY + 5], [x0 - drift, endY]];
         const { ribbon, ticks } = braidRibbon(anchorsL, { widthStart: 2.3, widthEnd: 1.1, twistTicks: 6 });
         above.push(
           <path key={"braidL" + i} d={ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.25" strokeLinejoin="round" />,
@@ -3069,12 +3069,12 @@ function getHairOverlay(styleKey, hairColor) {
       // just thicker, solid-filled ribbons with fewer twist ticks (they twist more slowly and
       // read as thicker rope-like sections, not a bundle of thin wiry lines).
       const darkC = darken(hairColor, 0.3), lightC = lighten(hairColor, 0.15);
-      const starts = [41.5, 39.7, 38, 36.3, 34.6];
+      const starts = [45.5, 43.3, 41.1, 38.9, 36.7];
       starts.forEach((x0, i) => {
         const len = 46 + (i % 3) * 6;
         const midY = (11 + len) / 2;
         const drift = 0.7 + i * 0.2; // barely any horizontal travel — hangs straight down
-        const anchorsL = [[x0 + 1.4, 2.5], [x0 + 0.5, 6], [x0, 9], [x0, 11], [x0 - drift * 0.3, midY], [x0 - drift * 0.7, midY + 6], [x0 - drift, len]];
+        const anchorsL = [[x0 + 0.7, 4], [x0 + 0.3, 6.5], [x0, 9], [x0, 11], [x0 - drift * 0.3, midY], [x0 - drift * 0.7, midY + 6], [x0 - drift, len]];
         const { ribbon, ticks } = braidRibbon(anchorsL, { widthStart: 3, widthEnd: 1.7, twistTicks: 4 });
         above.push(
           <path key={"locL" + i} d={ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.3" strokeLinejoin="round" />,
