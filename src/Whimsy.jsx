@@ -3186,6 +3186,14 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
               <stop offset="55%" stopColor={skinFill} />
               <stop offset="100%" stopColor={skinLine} />
             </radialGradient>
+            {/* Feathers the crisp vector linework just slightly, like a soft-shaded illustration
+                rather than flat graphic-design edges — used on facial detail and hair. */}
+            <filter id="softFace" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="0.3" />
+            </filter>
+            <filter id="softHair" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="0.18" />
+            </filter>
           </defs>
           <g transform={`translate(50,0) scale(${scaleX},1) translate(-50,0)`}>
             {hair.behind}
@@ -3206,9 +3214,9 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
               <path key={b.k + "-glow"} d={b.d} fill="none" stroke={COLORS.plum} strokeWidth="2.6" opacity="0.3" className="ache" style={{ pointerEvents: "none" }} />
             ))}
             <path d={BODY_OUTLINE} fill="none" stroke={feature} strokeWidth="1.1" strokeLinejoin="round" style={{ pointerEvents: "none" }} />
-            <g style={{ pointerEvents: "none" }}>{hair.scalp}</g>
+            <g style={{ pointerEvents: "none", filter: "url(#softHair)" }}>{hair.scalp}</g>
             {view === "front" ? (
-              <g style={{ pointerEvents: "none" }}>
+              <g style={{ pointerEvents: "none", filter: "url(#softFace)" }}>
                 {/* cheekbone/jaw contour — soft and low-contrast, just a hint of sculpting rather than a hard line */}
                 <g opacity="0.32">
                   <path d="M41 10.5 Q39 15 40.5 19.5 Q41.5 22.5 43.5 25" fill="none" stroke={soft} strokeWidth="0.45" strokeLinecap="round" />
@@ -3268,7 +3276,7 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
                 <path d="M60 40 Q54 46 58 54" fill="none" stroke={feature} strokeWidth="0.5" opacity="0.5" />
               </g>
             )}
-            <g style={{ pointerEvents: "none" }}>{hair.above}</g>
+            <g style={{ pointerEvents: "none", filter: "url(#softHair)" }}>{hair.above}</g>
           </g>
         </svg>
       </div>
