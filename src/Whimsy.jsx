@@ -2907,11 +2907,23 @@ function GroupLabel({ children, first }) {
 
 // Small color-math helpers so skin and hair can get real gradient shading (a lit side and
 // a shadow side, like the mannequin references) instead of one flat fill everywhere.
+// Accepts either "#RRGGBB" hex or an "rgb(r, g, b)" string — needed because darken()/lighten()
+// return rgb(...) strings, and those results are sometimes fed back into mixHex again (e.g.
+// "soft" and "iris" both mix from "feature", which is itself a darken() output). Without this,
+// re-parsing an rgb(...) string as hex silently produces NaN and renders as invisible/black.
+function parseColor(c) {
+  c = String(c).trim();
+  if (c[0] === "#") {
+    const h = c.replace("#", "");
+    return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)];
+  }
+  const m = c.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i);
+  if (m) return [parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3])];
+  return [0, 0, 0];
+}
 function mixHex(hex, target, amt) {
-  const h = hex.replace("#", "");
-  const t = target.replace("#", "");
-  const r1 = parseInt(h.substr(0, 2), 16), g1 = parseInt(h.substr(2, 2), 16), b1 = parseInt(h.substr(4, 2), 16);
-  const r2 = parseInt(t.substr(0, 2), 16), g2 = parseInt(t.substr(2, 2), 16), b2 = parseInt(t.substr(4, 2), 16);
+  const [r1, g1, b1] = parseColor(hex);
+  const [r2, g2, b2] = parseColor(target);
   const mix = (a, b) => Math.round(a + (b - a) * amt);
   return `rgb(${mix(r1, r2)}, ${mix(g1, g2)}, ${mix(b1, b2)})`;
 }
