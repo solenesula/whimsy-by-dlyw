@@ -3055,8 +3055,8 @@ function getHairOverlay(styleKey, hairColor) {
         // (narrow at the part, widening toward the ends) instead of parallel straight lines.
         const endY = 24 + i * 3;
         const midY = (10 + endY) / 2;
-        const flare = 1 + i * 1.6;
-        const wave = i % 2 === 0 ? 0.6 : -0.6;
+        const flare = 0.5 + i * 0.55;
+        const wave = i % 2 === 0 ? 0.2 : -0.2;
         const crownX = 47.5 - i * 0.4;
         const anchorsL = [[crownX, 2], [crownX - 0.8, 5], [frameX + 1.2, 7.5], [frameX, 10], [frameX - flare * 0.35 + wave, midY], [frameX - flare * 0.75, midY + (endY - midY) * 0.6], [frameX - flare, endY]];
         const { ribbon, ticks } = braidRibbon(anchorsL, { widthStart: 2.3, widthEnd: 1.4, twistTicks: 5 });
@@ -3100,8 +3100,8 @@ function getHairOverlay(styleKey, hairColor) {
         // heavier: shoulder-to-upper-chest length, flaring wider toward the outer locs.
         const len = 26 + i * 3.5;
         const midY = (11 + len) / 2;
-        const flare = 1.2 + i * 2;
-        const wave = i % 2 === 0 ? 0.7 : -0.7;
+        const flare = 0.6 + i * 0.7;
+        const wave = i % 2 === 0 ? 0.25 : -0.25;
         const crownX = 47 - i * 0.5;
         const anchorsL = [[crownX, 2.5], [crownX - 1, 6], [frameX + 1.4, 8.5], [frameX, 11], [frameX - flare * 0.35 + wave, midY], [frameX - flare * 0.75, midY + (len - midY) * 0.6], [frameX - flare, len]];
         const { ribbon, ticks } = braidRibbon(anchorsL, { widthStart: 3, widthEnd: 2, twistTicks: 3 });
