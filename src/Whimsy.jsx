@@ -40,14 +40,18 @@ const THEMES = [
 // body outline and the ache-selection ring). "feature" is a separate, deliberately higher-
 // contrast color for facial contour lines (jaw, cheek, nose, collarbone, bust, navel, spine)
 // so the face reads with real definition instead of flattening into the skin fill at every tone.
+// Real, warm skin-tone hexes (in the spirit of the widely-vetted emoji/Fitzpatrick-style
+// ramp), re-tuned so every stop reads as actual human skin rather than a flat or muddy
+// brown — each stays warm (never grey/ashy) and gets richer, not darker-toward-black, as
+// the ramp deepens.
 const SKIN_TONES = [
-  { key: "blush", label: "Blush (default)", fill: "#F6D9DE", glow: "#DFA6BA", feature: "#A9677B" },
-  { key: "deep", label: "Deep", fill: "#5C3A28", glow: "#7A4E35", feature: "#E7C39A" },
-  { key: "rich", label: "Rich", fill: "#7A4A2E", glow: "#94603F", feature: "#F0C89C" },
-  { key: "warm", label: "Warm", fill: "#A9714A", glow: "#BD8961", feature: "#4A2C16" },
-  { key: "tan", label: "Tan", fill: "#C99368", glow: "#D9AA82", feature: "#6B3F22" },
-  { key: "light", label: "Light", fill: "#E8B98F", glow: "#F0CBA8", feature: "#8A5530" },
-  { key: "porcelain", label: "Porcelain", fill: "#F1D3B4", glow: "#F6E0C8", feature: "#A66E42" },
+  { key: "blush", label: "Blush (default)", fill: "#F6D9DE", glow: "#E3B6BF", feature: "#A9677B" },
+  { key: "porcelain", label: "Porcelain", fill: "#FBE3CB", glow: "#EAC8A8", feature: "#A66E42" },
+  { key: "light", label: "Light", fill: "#F0C9A0", glow: "#D9A876", feature: "#8A5530" },
+  { key: "tan", label: "Tan", fill: "#D9A066", glow: "#BD824C", feature: "#6B3F22" },
+  { key: "warm", label: "Warm", fill: "#B9784A", glow: "#9C5F36", feature: "#4A2C16" },
+  { key: "rich", label: "Rich", fill: "#8B5A32", glow: "#71431F", feature: "#F0C89C" },
+  { key: "deep", label: "Deep", fill: "#5A3825", glow: "#432815", feature: "#E7C39A" },
 ];
 
 // Body map comes in a few different builds so the silhouette doesn't default to a single
