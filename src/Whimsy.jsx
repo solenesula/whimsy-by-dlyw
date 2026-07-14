@@ -3318,13 +3318,16 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
                   <path d="M47.7 18.7 Q47.4 19.5 48.2 19.9 Q49 20.3 50 20 Q51 20.3 51.8 19.9 Q52.6 19.5 52.3 18.7 Q51.2 19.7 50 19.4 Q48.8 19.7 47.7 18.7 Z"
                     fill={skinFill} stroke={soft} strokeWidth="0.35" />
                 </g>
-                {/* full, soft rounded lips — a muted rosy tone blended with the skin rather than a bright saturated pink */}
+                {/* full, thick, soft rounded lips — a muted rosy tone blended with the skin rather than a
+                    bright saturated pink. Both the cupid's-bow peak and the lower-lip bulge are pushed
+                    further from the mouth line than before (was barely 0.3/3 units, now ~1.5/4.5) and the
+                    corners widened slightly, so the mouth reads as noticeably fuller. */}
                 <g>
-                  <path d="M46.2 21.6 Q47.9 20.6 49 21.3 Q50 20.9 51 21.3 Q52.1 20.6 53.8 21.6 Q50 22.4 46.2 21.6 Z"
-                    fill={lip} opacity="0.85" stroke={lipLine} strokeWidth="0.25" />
-                  <path d="M46.2 21.6 Q50 24.6 53.8 21.6 Q50 23.4 46.2 21.6 Z"
-                    fill={lip} opacity="0.92" stroke={lipLine} strokeWidth="0.3" />
-                  <path d="M46.2 21.6 L53.8 21.6" stroke={lipLine} strokeWidth="0.25" opacity="0.35" />
+                  <path d="M45.7 21.7 Q47.6 20.2 49 21.1 Q50 20.5 51 21.1 Q52.4 20.2 54.3 21.7 Q50 22.6 45.7 21.7 Z"
+                    fill={lip} opacity="0.88" stroke={lipLine} strokeWidth="0.25" />
+                  <path d="M45.7 21.7 Q50 26.2 54.3 21.7 Q50 24 45.7 21.7 Z"
+                    fill={lip} opacity="0.95" stroke={lipLine} strokeWidth="0.3" />
+                  <path d="M45.7 21.7 L54.3 21.7" stroke={lipLine} strokeWidth="0.25" opacity="0.35" />
                 </g>
                 {/* jawline: a soft contour from cheek through the chin, just enough to read as a real face shape without a hard line */}
                 <path d="M43.5 24.5 Q46.3 28.2 50 28.9 Q53.7 28.2 56.5 24.5" fill="none" stroke={soft} strokeWidth="0.45" strokeLinecap="round" opacity="0.4" />
