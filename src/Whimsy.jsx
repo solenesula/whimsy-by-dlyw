@@ -3006,22 +3006,50 @@ function getHairOverlay(styleKey, hairColor) {
     );
   }
   switch (styleKey) {
-    case "afro":
+    case "afro": {
+      // The old version was one flat, half-opacity circle — it read as a gray, washed-out
+      // helmet instead of hair. This builds a solid base cloud plus a ring of overlapping
+      // "curl" circles around the silhouette edge so the outline itself looks bumpy/textured
+      // like real coiled hair, with a shadow underneath and light flecks on top for depth.
+      const darkC = darken(hairColor, 0.22), lightC = lighten(hairColor, 0.22);
       behind.push(
-        <circle key="afro-cloud" cx="50" cy="15.5" r="17.5" fill={hairColor} opacity="0.55" />,
-        <circle key="afro-tuft-l" cx="31" cy="18" r="3.2" fill={hairColor} opacity="0.5" />,
-        <circle key="afro-tuft-r" cx="69" cy="18" r="3.2" fill={hairColor} opacity="0.5" />,
-        <circle key="afro-tuft-t" cx="50" cy="-2" r="3.4" fill={hairColor} opacity="0.5" />
+        <circle key="afro-cloud" cx="50" cy="15" r="17" fill={hairColor} opacity="0.92" />,
+        <circle key="afro-shadow" cx="50" cy="20" r="15.5" fill={darkC} opacity="0.35" />
       );
+      const n = 26;
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2;
+        const rad = 15.5 + (i % 3) * 1.4;
+        const cx = 50 + Math.cos(a) * rad;
+        const cy = 15 + Math.sin(a) * rad * 0.95;
+        const tone = i % 5 === 0 ? lightC : i % 3 === 0 ? darkC : hairColor;
+        behind.push(
+          <circle key={"curl" + i} cx={cx} cy={cy} r={1.5 + (i % 2) * 0.6} fill={tone} opacity={i % 5 === 0 ? 0.55 : 0.8} />
+        );
+      }
+      // A few tighter inner curls near the crown so the texture doesn't read as hollow.
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2 + 0.3;
+        const cx = 50 + Math.cos(a) * 9;
+        const cy = 12 + Math.sin(a) * 8;
+        behind.push(<circle key={"innercurl" + i} cx={cx} cy={cy} r="1.3" fill={i % 2 === 0 ? darkC : hairColor} opacity="0.5" />);
+      }
       break;
-    case "puff":
+    }
+    case "puff": {
+      // Was a half-opacity gather plus a thin disconnected bump — bumped opacity so it reads
+      // as solid gathered hair instead of a faint smudge, and added a sheen + darker tie band
+      // so the puff looks voluminous and actually tied off, not floating above the head.
+      const darkC = darken(hairColor, 0.2), lightC = lighten(hairColor, 0.18);
       above.push(
         <path key="puff-gather" d="M42.5 9 Q42 5 45.5 2.5 Q50 0.8 54.5 2.5 Q58 5 57.5 9 Q56 6.5 50 6.2 Q44 6.5 42.5 9 Z"
-          fill={hairColor} opacity="0.35" />,
-        <ellipse key="puff" cx="50" cy="0.5" rx="7.5" ry="6" fill={hairColor} opacity="0.65" />,
-        <path key="puff-band" d="M42.5 6.5 Q50 9 57.5 6.5" stroke={hairColor} strokeWidth="1.4" fill="none" opacity="0.85" strokeLinecap="round" />
+          fill={hairColor} opacity="0.6" />,
+        <ellipse key="puff" cx="50" cy="0.3" rx="7.8" ry="6.6" fill={hairColor} opacity="0.9" />,
+        <path key="puff-sheen" d="M45.5 -2.8 Q50 -4.2 54.5 -2.8" stroke={lightC} strokeWidth="1" fill="none" opacity="0.4" strokeLinecap="round" />,
+        <path key="puff-band" d="M42.5 6.5 Q50 9.2 57.5 6.5" stroke={darkC} strokeWidth="1.5" fill="none" opacity="0.85" strokeLinecap="round" />
       );
       break;
+    }
     case "spacebuns":
       above.push(
         <ellipse key="bun-l" cx="39" cy="2" rx="5.2" ry="4.4" fill={hairColor} opacity="0.6" />,
@@ -3030,12 +3058,27 @@ function getHairOverlay(styleKey, hairColor) {
         <path key="bun-r-band" d="M57.5 6 Q61 7.8 64.5 6" stroke={hairColor} strokeWidth="1" fill="none" opacity="0.7" strokeLinecap="round" />
       );
       break;
-    case "ponytail":
+    case "ponytail": {
+      // The old tail path ran straight across the cheek/jaw (x 54-63 through y 4-32), reading
+      // as a dark diagonal slash over the face in front view. Routed it up and around instead
+      // — a tapered ribbon (same helper as braids/locs) that stays right of the cheekbone
+      // (which reaches x~61 at eye level) the whole way down, clear of every face feature.
+      const darkC = darken(hairColor, 0.18), lightC = lighten(hairColor, 0.15);
       above.push(
-        <ellipse key="pony-gather" cx="50" cy="1.5" rx="6.5" ry="5" fill={hairColor} opacity="0.6" />,
-        <path key="pony-tail" d="M55 4 C60 11 63 22 59 32 C57.5 25 56 14 54 6 Z" fill={hairColor} opacity="0.5" />
+        <ellipse key="pony-gather" cx="50" cy="1.5" rx="6.5" ry="5" fill={hairColor} opacity="0.75" />,
+        <path key="pony-band" d="M45 3.5 Q50 5.8 55 3.5" stroke={darkC} strokeWidth="1" fill="none" opacity="0.6" strokeLinecap="round" />
+      );
+      const anchors = [[58, 2], [63.5, 5], [67, 11], [65.5, 17.5], [63.5, 23.5], [61, 29.5], [59, 35]];
+      const { ribbon, ticks } = braidRibbon(anchors, { widthStart: 3, widthEnd: 1.6, twistTicks: 4 });
+      above.push(
+        <path key="pony-tail" d={ribbon} fill={hairColor} stroke={darkC} strokeWidth="0.2" strokeLinejoin="round" />,
+        <path key="pony-tail-sheen" d={ribbon} fill="none" stroke={lightC} strokeWidth="0.2" opacity="0.3" strokeLinejoin="round" />,
+        ...ticks.map((t, ti) => (
+          <line key={"ponytick" + ti} x1={t[0]} y1={t[1]} x2={t[2]} y2={t[3]} stroke={darkC} strokeWidth="0.25" opacity="0.25" strokeLinecap="round" />
+        ))
       );
       break;
+    }
     case "braids": {
       // Parted at the center, each strand starts already offset out at the hairline (framing
       // the face from the very top) and then hangs essentially straight down past the
@@ -3080,9 +3123,17 @@ function getHairOverlay(styleKey, hairColor) {
       break;
     }
     case "bantu": {
+      // Half-opacity flat circles read as loose polka dots, not wrapped knots. Bumped to solid
+      // fill, added a small highlight so each one reads as round/domed, and a thin wrap-thread
+      // arc across each to hint at the coiled base without drawing every wind of thread.
+      const darkC = darken(hairColor, 0.2), lightC = lighten(hairColor, 0.2);
       const knots = [[42, 3], [50, 0.5], [58, 3], [45.5, 7.5], [54.5, 7.5]];
       knots.forEach(([x, y], i) => {
-        above.push(<circle key={"knot" + i} cx={x} cy={y} r="2.6" fill={hairColor} opacity="0.6" />);
+        above.push(
+          <circle key={"knot" + i} cx={x} cy={y} r="2.8" fill={hairColor} opacity="0.92" stroke={darkC} strokeWidth="0.15" />,
+          <circle key={"knotshine" + i} cx={x - 0.8} cy={y - 0.8} r="0.7" fill={lightC} opacity="0.5" />,
+          <path key={"knotwrap" + i} d={`M${x - 2.4} ${y} Q${x} ${y + 1.6} ${x + 2.4} ${y}`} stroke={darkC} strokeWidth="0.25" fill="none" opacity="0.4" />
+        );
       });
       break;
     }
@@ -3124,15 +3175,22 @@ function getHairOverlay(styleKey, hairColor) {
       });
       break;
     }
-    case "headwrap":
+    case "headwrap": {
+      // The old wrap's bottom edge ran down to y=18.5 — well below the eyebrows (y~11.5) and
+      // straight across the eyes (y=14), so it rendered like a blindfold. A real wrap ties
+      // above the eyebrows at the hairline, so the whole shape is raised to end by y~10.6,
+      // and opacity bumped up so it reads as solid fabric rather than a translucent wash.
+      const darkC = darken(hairColor, 0.22);
       above.push(
-        <path key="wrap" d="M35.5 15 C35.5 6 42 0.5 50 0.5 C58 0.5 64.5 6 64.5 15 L64 18.5 C56 16 44 16 36 18.5 Z"
-          fill={hairColor} opacity="0.65" />,
-        <path key="wrap-knot-l" d="M45 1.5 L41 -2.5 L48.5 0.5 Z" fill={hairColor} opacity="0.6" />,
-        <path key="wrap-knot-r" d="M55 1.5 L59 -2.5 L51.5 0.5 Z" fill={hairColor} opacity="0.6" />,
-        <path key="wrap-line" d="M37 12 Q50 9 63 12" stroke={hairColor} strokeWidth="0.6" fill="none" opacity="0.5" />
+        <path key="wrap" d="M35.5 9.5 C35.5 3 42 0 50 0 C58 0 64.5 3 64.5 9.5 C64.5 9.9 64 10.4 63 10.7 C56 8.8 44 8.8 37 10.7 C36 10.4 35.5 9.9 35.5 9.5 Z"
+          fill={hairColor} opacity="0.9" />,
+        <path key="wrap-knot-l" d="M44 1 L40 -3 L47.5 -0.5 Z" fill={hairColor} opacity="0.8" />,
+        <path key="wrap-knot-r" d="M56 1 L60 -3 L52.5 -0.5 Z" fill={hairColor} opacity="0.8" />,
+        <path key="wrap-line" d="M37.5 6.3 Q50 3.8 62.5 6.3" stroke={darkC} strokeWidth="0.5" fill="none" opacity="0.45" />,
+        <path key="wrap-fold" d="M37 9.6 Q50 7.6 63 9.6" stroke={darkC} strokeWidth="0.4" fill="none" opacity="0.4" />
       );
       break;
+    }
     case "bald":
     default:
       break;
