@@ -166,8 +166,7 @@ const BODY_MAP = [
 
 // Clickable hit-zones for the real front-view photo (percent of image width/height,
 // measured from the actual photo's silhouette so the transparent overlay lines up with
-// the person in the picture). The back view still uses the hand-drawn BODY_MAP paths
-// above, since there's no matching back-view photo yet.
+// the person in the picture).
 const FRONT_PHOTO_HITZONES = [
   { k: "head", x: 37, y: 4, w: 26, h: 16.5 },
   { k: "neck", x: 43, y: 19, w: 16, h: 5.5 },
@@ -190,6 +189,32 @@ const FRONT_PHOTO_HITZONES = [
   { k: "shinR", x: 61, y: 85.5, w: 12, h: 8 },
   { k: "footL", x: 26, y: 92, w: 14, h: 5 },
   { k: "footR", x: 60, y: 92, w: 14, h: 5 },
+];
+
+// Same idea for the matching back-view photo — measured from its own silhouette
+// (nearly identical proportions to the front photo, same generation).
+const BACK_PHOTO_HITZONES = [
+  { k: "head", x: 37, y: 4, w: 26, h: 16 },
+  { k: "neck", x: 37, y: 18.5, w: 26, h: 4.5 },
+  { k: "shoulderL", x: 23, y: 20, w: 16, h: 9 },
+  { k: "shoulderR", x: 61, y: 20, w: 16, h: 9 },
+  { k: "armL", x: 13, y: 27, w: 22, h: 29 },
+  { k: "armR", x: 65, y: 27, w: 22, h: 29 },
+  { k: "handL", x: 7, y: 52, w: 19, h: 12 },
+  { k: "handR", x: 74, y: 52, w: 19, h: 12 },
+  { k: "upperBackL", x: 36, y: 28, w: 15, h: 16 },
+  { k: "upperBackR", x: 51, y: 28, w: 15, h: 16 },
+  { k: "lowerBack", x: 33, y: 44, w: 34, h: 9 },
+  { k: "glutesL", x: 27, y: 52, w: 24, h: 13 },
+  { k: "glutesR", x: 51, y: 52, w: 24, h: 13 },
+  { k: "legL", x: 25, y: 59, w: 25, h: 23 },
+  { k: "legR", x: 51, y: 59, w: 25, h: 23 },
+  { k: "kneeL", x: 27, y: 81, w: 14, h: 5.5 },
+  { k: "kneeR", x: 60, y: 81, w: 14, h: 5.5 },
+  { k: "shinL", x: 28, y: 85.5, w: 12, h: 8 },
+  { k: "shinR", x: 61, y: 85.5, w: 12, h: 8 },
+  { k: "footL", x: 27, y: 92.5, w: 13, h: 4.5 },
+  { k: "footR", x: 60, y: 92.5, w: 13, h: 4.5 },
 ];
 
 // Pain quality descriptors, paired with location on the body map. This is the same
@@ -3512,6 +3537,41 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
   // different proportion, not just a bigger/smaller version of one shape.
   const curveAmt = shape?.curve ?? 1;
   const hair = getHairOverlay(hairStyle, hairColorHex || "#3B2417");
+  // Shared renderer for the front/back photo + organic hit-zone overlay, so both views
+  // stay visually and behaviorally identical (same blend into the card, same soft-blob
+  // selection highlight, same accessibility wiring) without duplicating the JSX twice.
+  const renderPhotoBody = (src, zones, label) => (
+    <div className="rounded-2xl overflow-hidden relative" role="group" aria-label={label}
+      style={{ width: "46vw", maxWidth: 188, minWidth: 168, aspectRatio: "927 / 1696", background: "radial-gradient(130px 165px at 50% 48%, #FEF8FA 0%, #FBF1EC 100%)" }}>
+      <img src={src} alt=""
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none", userSelect: "none" }}
+        draggable={false} />
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none"
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+        {zones.map((z) => {
+          const b = BODY_MAP.find((bb) => bb.k === z.k);
+          const on = isOn(z.k);
+          const cx = z.x + z.w / 2, cy = z.y + z.h / 2, rx = z.w / 2, ry = z.h / 2;
+          return (
+            <g key={z.k}>
+              <ellipse cx={cx} cy={cy} rx={rx} ry={ry}
+                onClick={() => toggle(z.k)} aria-label={b?.label || z.k}
+                role="button" tabIndex={0} aria-pressed={on}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(z.k); } }}
+                className="bodypart-photo"
+                fill={on ? "rgba(214, 79, 132, 0.38)" : "transparent"}
+                stroke={on ? "#571F33" : "transparent"}
+                strokeWidth={on ? 0.7 : 0} />
+              {on && (
+                <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="none" stroke="#571F33"
+                  strokeWidth="1.4" opacity="0.35" className="ache" style={{ pointerEvents: "none" }} />
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
   return (
     <div>
       <div className="flex items-center justify-center gap-2 mb-2">
@@ -3535,160 +3595,9 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
         style={{ background: "radial-gradient(130px 165px at 50% 48%, #FEF8FA 0%, #FBF1EC 100%)", border: `1px solid ${COLORS.line}` }}>
         <span className="whimsy-sway absolute" style={{ left: 12, bottom: 6, opacity: 0.3 }}><Sprig size={22} /></span>
         <span className="whimsy-float absolute" style={{ right: 14, top: 8, opacity: 0.5 }}><Sparkles size={13} style={{ color: COLORS.gold }} /></span>
-        {view === "front" ? (
-          <div className="rounded-2xl overflow-hidden relative" role="group" aria-label="Front view of a body. Tap where it aches."
-            style={{ width: "46vw", maxWidth: 188, minWidth: 168, aspectRatio: "927 / 1696", background: "radial-gradient(130px 165px at 50% 48%, #FEF8FA 0%, #FBF1EC 100%)" }}>
-            <img src="/assets/body-map/whimsy-body-front.png" alt=""
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none", userSelect: "none" }}
-              draggable={false} />
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none"
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
-              {FRONT_PHOTO_HITZONES.map((z) => {
-                const b = BODY_MAP.find((bb) => bb.k === z.k);
-                const on = isOn(z.k);
-                // Rendered as a soft organic blob (ellipse) hugging the limb/region rather
-                // than a hard-edged rectangle, so a selection reads like a gentle highlight
-                // on the body itself rather than a box pasted over the photo.
-                const cx = z.x + z.w / 2, cy = z.y + z.h / 2, rx = z.w / 2, ry = z.h / 2;
-                return (
-                  <g key={z.k}>
-                    <ellipse cx={cx} cy={cy} rx={rx} ry={ry}
-                      onClick={() => toggle(z.k)} aria-label={b?.label || z.k}
-                      role="button" tabIndex={0} aria-pressed={on}
-                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(z.k); } }}
-                      className="bodypart-photo"
-                      fill={on ? "rgba(214, 79, 132, 0.38)" : "transparent"}
-                      stroke={on ? "#571F33" : "transparent"}
-                      strokeWidth={on ? 0.7 : 0} />
-                    {on && (
-                      <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="none" stroke="#571F33"
-                        strokeWidth="1.4" opacity="0.35" className="ache" style={{ pointerEvents: "none" }} />
-                    )}
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
-        ) : (
-        <svg width="126" height="205" viewBox="14 -1 72 172" aria-label={`Body map, ${view} view. Tap where it aches.`}>
-          <defs>
-            {/* A soft lit side (upper-left) to shadow side (lower-right) gradient, so the
-                body reads as a rounded, sculpted figure instead of one flat fill — the
-                same directional light the mannequin references showed. */}
-            <radialGradient id={`skinGrad-${skin?.key || "default"}`} cx="38%" cy="20%" r="95%">
-              <stop offset="0%" stopColor={lighten(skinFill, 0.35)} />
-              <stop offset="55%" stopColor={skinFill} />
-              <stop offset="100%" stopColor={skinLine} />
-            </radialGradient>
-            {/* Feathers the crisp vector linework just slightly, like a soft-shaded illustration
-                rather than flat graphic-design edges — used on facial detail and hair. */}
-            <filter id="softFace" x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="0.3" />
-            </filter>
-            <filter id="softHair" x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="0.18" />
-            </filter>
-          </defs>
-          <g transform={`translate(50,0) scale(${scaleX},1) translate(-50,0)`}>
-            {hair.behind}
-            <path d={BODY_OUTLINE} fill={`url(#skinGrad-${skin?.key || "default"})`} stroke="none" />
-            {viewParts.map((b) => {
-              const on = isOn(b.k);
-              return (
-                <path key={b.k} d={b.d} onClick={() => toggle(b.k)} aria-label={b.label}
-                  role="button" tabIndex={0} aria-pressed={on}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(b.k); } }}
-                  className="bodypart"
-                  fill={on ? COLORS.plum : "transparent"}
-                  stroke={on ? COLORS.plumDark : feature}
-                  strokeWidth={on ? 0.9 : 0.5} strokeLinejoin="round" />
-              );
-            })}
-            {viewParts.filter((b) => isOn(b.k)).map((b) => (
-              <path key={b.k + "-glow"} d={b.d} fill="none" stroke={COLORS.plum} strokeWidth="2.6" opacity="0.3" className="ache" style={{ pointerEvents: "none" }} />
-            ))}
-            <path d={BODY_OUTLINE} fill="none" stroke={feature} strokeWidth="1.1" strokeLinejoin="round" style={{ pointerEvents: "none" }} />
-            <g style={{ pointerEvents: "none", filter: "url(#softHair)" }}>{hair.scalp}</g>
-            {view === "front" ? (
-              <g style={{ pointerEvents: "none", filter: "url(#softFace)" }}>
-                {/* cheekbone/jaw contour — soft and low-contrast, just a hint of sculpting rather than a hard line */}
-                <g opacity="0.32">
-                  <path d="M41 10.5 Q39 15 40.5 19.5 Q41.5 22.5 43.5 25" fill="none" stroke={soft} strokeWidth="0.45" strokeLinecap="round" />
-                  <path d="M59 10.5 Q61 15 59.5 19.5 Q58.5 22.5 56.5 25" fill="none" stroke={soft} strokeWidth="0.45" strokeLinecap="round" />
-                </g>
-                {/* thin, gently arched brows — colored from the chosen hair color, not skin tone,
-                    so brows actually match hair (e.g. blonde hair reads with lighter brows) */}
-                <g opacity="0.65">
-                  <path d="M43.3 11.7 Q45.4 10.5 47.6 11.5" fill="none" stroke={browColor} strokeWidth="0.4" strokeLinecap="round" />
-                  <path d="M52.4 11.5 Q54.6 10.5 56.7 11.7" fill="none" stroke={browColor} strokeWidth="0.4" strokeLinecap="round" />
-                </g>
-                {/* big, round, warm brown eyes — soft lid line, a warm iris (not stark black), gentle pupil and glint */}
-                <g>
-                  <path d="M42.8 14 Q45.4 11.7 48 14 Q45.4 15.8 42.8 14 Z" fill="#FFFBF6" opacity="0.95" />
-                  <path d="M42.8 14 Q45.4 11.7 48 14 Q45.4 15.8 42.8 14 Z" fill="none" stroke={soft} strokeWidth="0.35" opacity="0.6" />
-                  <path d="M52 14 Q54.6 11.7 57.2 14 Q54.6 15.8 52 14 Z" fill="#FFFBF6" opacity="0.95" />
-                  <path d="M52 14 Q54.6 11.7 57.2 14 Q54.6 15.8 52 14 Z" fill="none" stroke={soft} strokeWidth="0.35" opacity="0.6" />
-                  <circle cx="45.4" cy="14.1" r="1.15" fill={iris} opacity="0.92" />
-                  <circle cx="54.6" cy="14.1" r="1.15" fill={iris} opacity="0.92" />
-                  <circle cx="45.4" cy="14.1" r="0.5" fill="#241708" opacity="0.9" />
-                  <circle cx="54.6" cy="14.1" r="0.5" fill="#241708" opacity="0.9" />
-                  <circle cx="45.75" cy="13.65" r="0.25" fill="#fff" opacity="0.95" />
-                  <circle cx="54.95" cy="13.65" r="0.25" fill="#fff" opacity="0.95" />
-                  <path d="M46.9 13.1 L47.7 12.3" stroke={soft} strokeWidth="0.3" strokeLinecap="round" opacity="0.4" />
-                  <path d="M53.1 13.1 L52.3 12.3" stroke={soft} strokeWidth="0.3" strokeLinecap="round" opacity="0.4" />
-                </g>
-                {/* nose: small and soft, mostly a gentle shadow rather than a drawn line */}
-                <g opacity="0.5">
-                  <path d="M49.6 13.9 Q49.1 16.9 49.3 18.4" fill="none" stroke={soft} strokeWidth="0.4" strokeLinecap="round" />
-                  <path d="M47.7 18.7 Q47.4 19.5 48.2 19.9 Q49 20.3 50 20 Q51 20.3 51.8 19.9 Q52.6 19.5 52.3 18.7 Q51.2 19.7 50 19.4 Q48.8 19.7 47.7 18.7 Z"
-                    fill={skinFill} stroke={soft} strokeWidth="0.35" />
-                </g>
-                {/* full, thick, soft rounded lips — a muted rosy tone blended with the skin rather than a
-                    bright saturated pink. Both the cupid's-bow peak and the lower-lip bulge are pushed
-                    further from the mouth line than before (was barely 0.3/3 units, now ~1.5/4.5) and the
-                    corners widened slightly, so the mouth reads as noticeably fuller. */}
-                <g>
-                  <path d="M45.7 21.7 Q47.6 20.2 49 21.1 Q50 20.5 51 21.1 Q52.4 20.2 54.3 21.7 Q50 22.6 45.7 21.7 Z"
-                    fill={lip} opacity="0.88" stroke={lipLine} strokeWidth="0.25" />
-                  <path d="M45.7 21.7 Q50 26.2 54.3 21.7 Q50 24 45.7 21.7 Z"
-                    fill={lip} opacity="0.95" stroke={lipLine} strokeWidth="0.3" />
-                  <path d="M45.7 21.7 L54.3 21.7" stroke={lipLine} strokeWidth="0.25" opacity="0.35" />
-                </g>
-                {/* jawline: a soft contour from cheek through the chin, just enough to read as a real face shape without a hard line */}
-                <path d="M43.5 24.5 Q46.3 28.2 50 28.9 Q53.7 28.2 56.5 24.5" fill="none" stroke={soft} strokeWidth="0.45" strokeLinecap="round" opacity="0.4" />
-                {/* collarbone hint just below the neck */}
-                <path d="M40 38.5 Q50 41 60 38.5" fill="none" stroke={feature} strokeWidth="0.5" opacity="0.4" />
-                {/* fuller, rounder bust with an underbust curve, set into the chest rather than floating on it.
-                    Scaled by curveAmt about the sternum point so bust fullness actually differs by body type
-                    instead of just scaling uniformly with the rest of the frame. */}
-                <g transform={`translate(50,44) scale(${curveAmt}) translate(-50,-44)`}>
-                  <path d="M39.5 42 C37 46.5 38 51 43 52.5 C46.5 51.5 48.5 48 49 44.5 C47.5 41.5 43 40.5 39.5 42 Z"
-                    fill={skinFill} opacity="0.6" stroke={feature} strokeWidth="0.5" />
-                  <path d="M60.5 42 C63 46.5 62 51 57 52.5 C53.5 51.5 51.5 48 51 44.5 C52.5 41.5 57 40.5 60.5 42 Z"
-                    fill={skinFill} opacity="0.6" stroke={feature} strokeWidth="0.5" />
-                  <path d="M50 41.5 L50 45.5" stroke={feature} strokeWidth="0.4" opacity="0.45" />
-                </g>
-                {/* waist/hip contour: a soft inner curve whose depth/flare scales with curveAmt, so the
-                    three body types read as genuinely different proportions (straighter vs. more
-                    hourglass) rather than the same silhouette just resized wider. */}
-                <g opacity={0.22 + (curveAmt - 1) * 0.18}>
-                  <path d={`M40 46 Q${40 - (curveAmt - 1) * 3.5} 55 41 63`} fill="none" stroke={soft} strokeWidth="0.5" strokeLinecap="round" />
-                  <path d={`M60 46 Q${60 + (curveAmt - 1) * 3.5} 55 59 63`} fill="none" stroke={soft} strokeWidth="0.5" strokeLinecap="round" />
-                </g>
-                {/* navel */}
-                <ellipse cx="50" cy="63" rx="0.5" ry="0.7" fill="none" stroke={feature} strokeWidth="0.5" opacity="0.55" />
-              </g>
-            ) : (
-              <g style={{ pointerEvents: "none" }}>
-                <path d="M50 36 L50 73" stroke={feature} strokeWidth="0.6" opacity="0.55" strokeDasharray="1.2 2" />
-                <path d={`M40 40 Q${46 - (curveAmt - 1) * 3} 46 42 54`} fill="none" stroke={feature} strokeWidth="0.5" opacity="0.5" />
-                <path d={`M60 40 Q${54 + (curveAmt - 1) * 3} 46 58 54`} fill="none" stroke={feature} strokeWidth="0.5" opacity="0.5" />
-              </g>
-            )}
-            <g style={{ pointerEvents: "none", filter: "url(#softHair)" }}>{hair.above}</g>
-          </g>
-        </svg>
-        )}
+        {view === "front"
+          ? renderPhotoBody("/assets/body-map/whimsy-body-front.png", FRONT_PHOTO_HITZONES, "Front view of a body. Tap where it aches.")
+          : renderPhotoBody("/assets/body-map/whimsy-body-back.png", BACK_PHOTO_HITZONES, "Back view of a body. Tap where it aches.")}
       </div>
       <p className="text-center text-[0.68rem] mt-1.5 italic" style={{ color: COLORS.inkSoft }}>
         {view === "front" ? "Facing you" : "Facing away from you"}
