@@ -3624,12 +3624,12 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
           )}
           {hairStyle !== "bald" && (
             <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              {/* The hairstyle paths were authored against the old drawn-body's ~170-unit-tall
-                  coordinate space (head top at y~3, braid/loc tips down around y~40). The photo
-                  base now uses a 0-100 percent-of-image-height space where the bald head sits at
-                  roughly y 5-20%, so remap old_y -> old_y*0.595 + 5 to land hair back on the real
-                  photographed head instead of floating at the wrong scale/position. */}
-              <g transform="translate(0 5) scale(1 0.595)">
+              {/* The hairstyle paths were authored to frame a small illustrated head circle, not
+                  this photo's actual face proportions -- mapped 1:1 they swallowed the whole
+                  face (afro/puff clouds sat right over the eyes). Scaling down in both axes and
+                  shifting up keeps the volume above the eyebrow line while still reaching
+                  shoulder-length for braids/locs/ponytail. */}
+              <g transform="translate(11 2) scale(0.78 0.48)">
                 {hair.behind}
                 {hair.scalp}
                 {hair.above}
