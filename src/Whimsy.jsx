@@ -1248,6 +1248,7 @@ export default function Whimsy() {
       ...(myConditions.length > 0 ? [`Known conditions: ${myConditions.join(", ")}`] : []),
       ...(medHx.filter((m) => m.kind === "allergy").length > 0 ? [`ALLERGIES / REACTIONS: ${medHx.filter((m) => m.kind === "allergy").map((m) => m.reaction ? `${m.med} (${m.reaction})` : m.med).join("; ")}`] : []),
       ...(medHx.filter((m) => m.kind === "failed").length > 0 ? [`Medications tried without success: ${medHx.filter((m) => m.kind === "failed").map((m) => m.reaction ? `${m.med} (${m.reaction})` : m.med).join("; ")}`] : []),
+      ...(medSchedule.length > 0 ? [`Current medications: ${medSchedule.map((m) => `${m.med}${m.dose ? " " + m.dose : ""}${m.times ? " (" + m.times + ")" : ""}`).join("; ")}`] : []),
       "",
       `Average pain level: ${avgPain} / 10`,
       `Flare (red) days: ${redDays} · Low-energy (yellow) days: ${yellowDays}`,
@@ -2128,11 +2129,18 @@ export default function Whimsy() {
                     <p className="text-sm font-bold flex items-center gap-1.5"><FileText size={15} style={{ color: COLORS.plumDark }} /> Notes for your next visit</p>
                     <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>{entries.length} days logged, ready to hand over</p>
                   </div>
-                  <button onClick={copySummary}
-                    className="rounded-full px-4 py-2.5 text-xs font-bold text-white shrink-0 focus:outline-none focus-visible:ring-2"
-                    style={{ background: copied ? COLORS.green : GRAD }}>
-                    {copied ? "Copied ✓" : "Copy"}
-                  </button>
+                  <div className="flex gap-2 shrink-0">
+                    <button onClick={copySummary}
+                      className="rounded-full px-4 py-2.5 text-xs font-bold text-white focus:outline-none focus-visible:ring-2"
+                      style={{ background: copied ? COLORS.green : GRAD }}>
+                      {copied ? "Copied ✓" : "Copy"}
+                    </button>
+                    <button onClick={() => window.print()} aria-label="Print summary for your doctor"
+                      className="rounded-full px-4 py-2.5 text-xs font-bold flex items-center gap-1.5 focus:outline-none focus-visible:ring-2"
+                      style={{ background: COLORS.pill, color: COLORS.plumDark }}>
+                      <Printer size={13} /> Print
+                    </button>
+                  </div>
                 </div>
                 <button onClick={() => setSumOpen(!sumOpen)}
                   className="mt-2 text-xs font-bold focus:outline-none focus-visible:ring-2" style={{ color: COLORS.plumDark }}>
@@ -2144,6 +2152,21 @@ export default function Whimsy() {
                     {buildSummary()}
                   </pre>
                 )}
+                {/* Print-only view: hidden on screen, shown full-page when "Print" triggers window.print().
+                    Everything else on the page is hidden via the @media print rule below, so the doctor
+                    gets one clean printed page instead of the whole app chrome. */}
+                <style>{`
+                  @media print {
+                    body * { visibility: hidden; }
+                    .whimsy-print-summary, .whimsy-print-summary * { visibility: visible; }
+                    .whimsy-print-summary { position: absolute; left: 0; top: 0; width: 100%; padding: 24px; }
+                  }
+                `}</style>
+                <div className="whimsy-print-summary" style={{ display: "none" }}>
+                  <h1 style={{ fontFamily: SERIF, fontSize: "1.4rem", marginBottom: 4, color: "#000" }}>Whimsy — Notes for my next visit</h1>
+                  <p style={{ fontSize: "0.8rem", color: "#555", marginBottom: 16 }}>Prepared by patient · printed {fmtDateLong(todayStr())}</p>
+                  <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: "0.85rem", lineHeight: 1.5, color: "#000" }}>{buildSummary()}</pre>
+                </div>
               </div>
             )}
           </section>
@@ -2663,6 +2686,71 @@ export default function Whimsy() {
                       </button>
                     </div>
                   ))}
+                </div>
+              )}
+            </ToolCard>
+
+            <ToolCard id="medschedule" icon={Pill} title="My medications" subtitle={medSchedule.length > 0 ? `${medSchedule.length} active` : "Dosing schedule & refills"} open={openTool} setOpen={setOpenTool}>
+              <p className="text-sm mb-3" style={{ color: COLORS.inkSoft }}>
+                What you're actively taking, how often, and when you're due for a refill — separate from today's "meds taken" log, and separate from the allergy / didn't-work record above.
+              </p>
+              <div className="mb-3">
+                <SuggestInput
+                  label="Medication"
+                  placeholder="type to search or add"
+                  value={msMed} setValue={setMsMed}
+                  options={[...SEED_MEDS, ...(customTerms.meds || [])]}
+                  onAddCustom={(x) => addCustomTerm("meds", x)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Dose" value={msDose} setValue={setMsDose} placeholder="200mg" />
+                <Field label="Schedule" value={msTimes} setValue={setMsTimes} placeholder="2x daily" />
+              </div>
+              <div className="mb-4">
+                <label className={labelCls} style={{ color: COLORS.inkSoft }}>Refill due date</label>
+                <input type="date" value={msRefillDate} onChange={(e) => setMsRefillDate(e.target.value)}
+                  className={inputCls} style={inputStyle} />
+              </div>
+              <button
+                onClick={() => {
+                  const m = msMed.trim();
+                  if (!m) return;
+                  setMedSchedule([...medSchedule, { id: Date.now().toString(36), med: m, dose: msDose.trim(), times: msTimes.trim(), refillDate: msRefillDate }]);
+                  setMsMed(""); setMsDose(""); setMsTimes(""); setMsRefillDate("");
+                }}
+                disabled={!msMed.trim()}
+                className="w-full rounded-full py-3.5 text-sm font-bold text-white focus:outline-none focus-visible:ring-2"
+                style={{ background: msMed.trim() ? GRAD : COLORS.inkSoft, opacity: msMed.trim() ? 1 : 0.5 }}>
+                Add medication
+              </button>
+              {medSchedule.length > 0 && (
+                <div className="space-y-2 mt-3">
+                  {medSchedule.map((m) => {
+                    const days = m.refillDate ? Math.round((new Date(m.refillDate + "T00:00:00") - new Date(todayStr() + "T00:00:00")) / 86400000) : null;
+                    const dueSoon = days != null && days <= 7;
+                    const overdue = days != null && days < 0;
+                    return (
+                      <div key={m.id} className="rounded-2xl p-3 flex gap-2.5 items-start" style={{ background: COLORS.bg, border: `1px solid ${dueSoon ? COLORS.red : COLORS.line}` }}>
+                        <span className="mt-1 w-9 h-9 rounded-2xl flex items-center justify-center shrink-0" style={{ background: COLORS.pill }}>
+                          <Pill size={16} style={{ color: COLORS.plumDark }} />
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold">{m.med}{m.dose && <span className="font-normal" style={{ color: COLORS.inkSoft }}> · {m.dose}</span>}</p>
+                          {m.times && <p className="text-xs mt-0.5" style={{ color: COLORS.inkSoft }}>{m.times}</p>}
+                          {m.refillDate && (
+                            <p className="text-xs mt-1 font-semibold" style={{ color: dueSoon ? COLORS.red : COLORS.inkSoft }}>
+                              {overdue ? `Refill overdue (was due ${fmtDateLong(m.refillDate)})` : dueSoon ? `Refill due in ${days} day${days === 1 ? "" : "s"}` : `Refill due ${fmtDateLong(m.refillDate)}`}
+                            </p>
+                          )}
+                        </div>
+                        <button onClick={() => setMedSchedule(medSchedule.filter((x) => x.id !== m.id))} aria-label={`Remove ${m.med}`}
+                          className="shrink-0 p-1.5 rounded-lg focus:outline-none focus-visible:ring-2" style={{ color: COLORS.inkSoft }}>
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </ToolCard>
@@ -3200,14 +3288,20 @@ function getHairOverlay(styleKey, hairColor) {
       );
       break;
     }
-    case "spacebuns":
+    case "spacebuns": {
+      // A shadow bridging each bun down into the scalp cap so it reads as hair gathered up
+      // off the head, not a ball floating a few units above it.
+      const darkC = darken(hairColor, 0.22);
       above.push(
+        <ellipse key="bun-l-shadow" cx="39" cy="6.5" rx="4.6" ry="2.2" fill={darkC} opacity="0.35" />,
+        <ellipse key="bun-r-shadow" cx="61" cy="6.5" rx="4.6" ry="2.2" fill={darkC} opacity="0.35" />,
         <ellipse key="bun-l" cx="39" cy="2" rx="5.2" ry="4.4" fill={hairColor} opacity="0.6" />,
         <ellipse key="bun-r" cx="61" cy="2" rx="5.2" ry="4.4" fill={hairColor} opacity="0.6" />,
         <path key="bun-l-band" d="M35.5 6 Q39 7.8 42.5 6" stroke={hairColor} strokeWidth="1" fill="none" opacity="0.7" strokeLinecap="round" />,
         <path key="bun-r-band" d="M57.5 6 Q61 7.8 64.5 6" stroke={hairColor} strokeWidth="1" fill="none" opacity="0.7" strokeLinecap="round" />
       );
       break;
+    }
     case "ponytail": {
       // The old tail path ran straight across the cheek/jaw (x 54-63 through y 4-32), reading
       // as a dark diagonal slash over the face in front view. Routed it up and around instead
@@ -3280,6 +3374,9 @@ function getHairOverlay(styleKey, hairColor) {
       const knots = [[42, 3], [50, 0.5], [58, 3], [45.5, 7.5], [54.5, 7.5]];
       knots.forEach(([x, y], i) => {
         above.push(
+          // shadow anchoring the knot to the scalp, so each one reads as wrapped-up hair
+          // rather than a dot resting on top of the head
+          <ellipse key={"knotshadow" + i} cx={x} cy={y + 2} rx="2.2" ry="1" fill={darkC} opacity="0.3" />,
           <circle key={"knot" + i} cx={x} cy={y} r="2.8" fill={hairColor} opacity="0.92" stroke={darkC} strokeWidth="0.15" />,
           <circle key={"knotshine" + i} cx={x - 0.8} cy={y - 0.8} r="0.7" fill={lightC} opacity="0.5" />,
           <path key={"knotwrap" + i} d={`M${x - 2.4} ${y} Q${x} ${y + 1.6} ${x + 2.4} ${y}`} stroke={darkC} strokeWidth="0.25" fill="none" opacity="0.4" />
@@ -3369,9 +3466,18 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
   // harsh/inky for the softer, rounder look of a friendly illustrated face.
   const soft = mixHex(feature, skinFill, 0.4);
   const iris = mixHex(feature, "#8B5A2B", 0.5);
+  // Brows were tied to skin tone via "soft", so picking a light or gray hair color never
+  // showed up on the face. Blending the actual chosen hair color with skin keeps the same
+  // gentle, low-contrast look while making brows track hair color like real ones do.
+  const browColor = mixHex(hairColorHex || "#3B2417", skinFill, 0.25);
   const lip = mixHex(COLORS.plum, skinFill, 0.3);
   const lipLine = mixHex(COLORS.plumDark, skinFill, 0.35);
   const scaleX = shape?.scaleX ?? 1;
+  // scaleX alone only ever resized the same silhouette — the three body types looked like
+  // the same shape at different zoom levels. "curve" scales the bust fullness and the
+  // waist/hip contour independently of overall width, so each type reads as an actually
+  // different proportion, not just a bigger/smaller version of one shape.
+  const curveAmt = shape?.curve ?? 1;
   const hair = getHairOverlay(hairStyle, hairColorHex || "#3B2417");
   return (
     <div>
@@ -3442,10 +3548,11 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
                   <path d="M41 10.5 Q39 15 40.5 19.5 Q41.5 22.5 43.5 25" fill="none" stroke={soft} strokeWidth="0.45" strokeLinecap="round" />
                   <path d="M59 10.5 Q61 15 59.5 19.5 Q58.5 22.5 56.5 25" fill="none" stroke={soft} strokeWidth="0.45" strokeLinecap="round" />
                 </g>
-                {/* thin, gently arched brows — soft warm tone, not a harsh dark stroke */}
-                <g opacity="0.55">
-                  <path d="M43.3 11.7 Q45.4 10.5 47.6 11.5" fill="none" stroke={soft} strokeWidth="0.4" strokeLinecap="round" />
-                  <path d="M52.4 11.5 Q54.6 10.5 56.7 11.7" fill="none" stroke={soft} strokeWidth="0.4" strokeLinecap="round" />
+                {/* thin, gently arched brows — colored from the chosen hair color, not skin tone,
+                    so brows actually match hair (e.g. blonde hair reads with lighter brows) */}
+                <g opacity="0.65">
+                  <path d="M43.3 11.7 Q45.4 10.5 47.6 11.5" fill="none" stroke={browColor} strokeWidth="0.4" strokeLinecap="round" />
+                  <path d="M52.4 11.5 Q54.6 10.5 56.7 11.7" fill="none" stroke={browColor} strokeWidth="0.4" strokeLinecap="round" />
                 </g>
                 {/* big, round, warm brown eyes — soft lid line, a warm iris (not stark black), gentle pupil and glint */}
                 <g>
@@ -3483,20 +3590,31 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
                 <path d="M43.5 24.5 Q46.3 28.2 50 28.9 Q53.7 28.2 56.5 24.5" fill="none" stroke={soft} strokeWidth="0.45" strokeLinecap="round" opacity="0.4" />
                 {/* collarbone hint just below the neck */}
                 <path d="M40 38.5 Q50 41 60 38.5" fill="none" stroke={feature} strokeWidth="0.5" opacity="0.4" />
-                {/* fuller, rounder bust with an underbust curve, set into the chest rather than floating on it */}
-                <path d="M39.5 42 C37 46.5 38 51 43 52.5 C46.5 51.5 48.5 48 49 44.5 C47.5 41.5 43 40.5 39.5 42 Z"
-                  fill={skinFill} opacity="0.6" stroke={feature} strokeWidth="0.5" />
-                <path d="M60.5 42 C63 46.5 62 51 57 52.5 C53.5 51.5 51.5 48 51 44.5 C52.5 41.5 57 40.5 60.5 42 Z"
-                  fill={skinFill} opacity="0.6" stroke={feature} strokeWidth="0.5" />
-                <path d="M50 41.5 L50 45.5" stroke={feature} strokeWidth="0.4" opacity="0.45" />
+                {/* fuller, rounder bust with an underbust curve, set into the chest rather than floating on it.
+                    Scaled by curveAmt about the sternum point so bust fullness actually differs by body type
+                    instead of just scaling uniformly with the rest of the frame. */}
+                <g transform={`translate(50,44) scale(${curveAmt}) translate(-50,-44)`}>
+                  <path d="M39.5 42 C37 46.5 38 51 43 52.5 C46.5 51.5 48.5 48 49 44.5 C47.5 41.5 43 40.5 39.5 42 Z"
+                    fill={skinFill} opacity="0.6" stroke={feature} strokeWidth="0.5" />
+                  <path d="M60.5 42 C63 46.5 62 51 57 52.5 C53.5 51.5 51.5 48 51 44.5 C52.5 41.5 57 40.5 60.5 42 Z"
+                    fill={skinFill} opacity="0.6" stroke={feature} strokeWidth="0.5" />
+                  <path d="M50 41.5 L50 45.5" stroke={feature} strokeWidth="0.4" opacity="0.45" />
+                </g>
+                {/* waist/hip contour: a soft inner curve whose depth/flare scales with curveAmt, so the
+                    three body types read as genuinely different proportions (straighter vs. more
+                    hourglass) rather than the same silhouette just resized wider. */}
+                <g opacity={0.22 + (curveAmt - 1) * 0.18}>
+                  <path d={`M40 46 Q${40 - (curveAmt - 1) * 3.5} 55 41 63`} fill="none" stroke={soft} strokeWidth="0.5" strokeLinecap="round" />
+                  <path d={`M60 46 Q${60 + (curveAmt - 1) * 3.5} 55 59 63`} fill="none" stroke={soft} strokeWidth="0.5" strokeLinecap="round" />
+                </g>
                 {/* navel */}
                 <ellipse cx="50" cy="63" rx="0.5" ry="0.7" fill="none" stroke={feature} strokeWidth="0.5" opacity="0.55" />
               </g>
             ) : (
               <g style={{ pointerEvents: "none" }}>
                 <path d="M50 36 L50 73" stroke={feature} strokeWidth="0.6" opacity="0.55" strokeDasharray="1.2 2" />
-                <path d="M40 40 Q46 46 42 54" fill="none" stroke={feature} strokeWidth="0.5" opacity="0.5" />
-                <path d="M60 40 Q54 46 58 54" fill="none" stroke={feature} strokeWidth="0.5" opacity="0.5" />
+                <path d={`M40 40 Q${46 - (curveAmt - 1) * 3} 46 42 54`} fill="none" stroke={feature} strokeWidth="0.5" opacity="0.5" />
+                <path d={`M60 40 Q${54 + (curveAmt - 1) * 3} 46 58 54`} fill="none" stroke={feature} strokeWidth="0.5" opacity="0.5" />
               </g>
             )}
             <g style={{ pointerEvents: "none", filter: "url(#softHair)" }}>{hair.above}</g>
