@@ -110,6 +110,19 @@ const WRAP_COLORS = [
   { key: "black", label: "Black", hex: "#241712" },
 ];
 
+// Bodysuit color for the photo-based body map. Default ("blush") is picked to match the
+// actual pale pink fabric in the reference photos, so it reads as a no-op recolor for anyone
+// who never opens this picker — only a deliberate choice visibly shifts the fabric color.
+const BODYSUIT_COLORS = [
+  { key: "blush", label: "Blush (default)", hex: "#F0C9C7" },
+  { key: "lavender", label: "Lavender", hex: "#C9BFE0" },
+  { key: "sage", label: "Sage", hex: "#AEBFA0" },
+  { key: "sky", label: "Sky blue", hex: "#AECBDD" },
+  { key: "cream", label: "Cream", hex: "#EADFC4" },
+  { key: "plum", label: "Plum", hex: "#9C6E86" },
+  { key: "black", label: "Black", hex: "#3A3632" },
+];
+
 const TEXT_SCALES = [
   { key: "default", label: "Default", pct: 100 },
   { key: "large", label: "Large", pct: 115 },
@@ -163,6 +176,64 @@ const BODY_MAP = [
   { k: "allOver", label: "All over", view: "both", d: "" },
   { k: "joints", label: "Joints everywhere", view: "both", d: "" },
 ];
+
+// Body map now renders on top of real reference photos (front + back) instead of a drawn
+// silhouette, so realism doesn't get traded away for the sake of an illustration. Tap zones
+// are plotted as ellipses in percent-of-image coordinates, derived by measuring the actual
+// silhouette in each photo (row-by-row width scan against the plain background) rather than
+// reusing the old vector body's coordinate space, so they land on the real figure.
+const FRONT_PHOTO_HITZONES = [
+  { k: "head", cx: 50, cy: 12, rx: 13, ry: 8 },
+  { k: "neck", cx: 50, cy: 21, rx: 6, ry: 2.6 },
+  { k: "shoulderL", cx: 31, cy: 26.5, rx: 10, ry: 4 },
+  { k: "shoulderR", cx: 69, cy: 26.5, rx: 10, ry: 4 },
+  { k: "chest", cx: 50, cy: 37, rx: 15, ry: 6 },
+  { k: "abdomenRUQ", cx: 41, cy: 44, rx: 9, ry: 5 },
+  { k: "abdomenLUQ", cx: 59, cy: 44, rx: 9, ry: 5 },
+  { k: "abdomenRLQ", cx: 39, cy: 52.5, rx: 10, ry: 5 },
+  { k: "abdomenLLQ", cx: 61, cy: 52.5, rx: 10, ry: 5 },
+  { k: "armL", cx: 21, cy: 40, rx: 6.5, ry: 12 },
+  { k: "armR", cx: 79, cy: 40, rx: 6.5, ry: 12 },
+  { k: "handL", cx: 15, cy: 53.5, rx: 5.5, ry: 4.2 },
+  { k: "handR", cx: 85, cy: 53.5, rx: 5.5, ry: 4.2 },
+  { k: "legL", cx: 38, cy: 68, rx: 8.5, ry: 10 },
+  { k: "legR", cx: 62, cy: 68, rx: 8.5, ry: 10 },
+  { k: "kneeL", cx: 39, cy: 80, rx: 6, ry: 3.5 },
+  { k: "kneeR", cx: 61, cy: 80, rx: 6, ry: 3.5 },
+  { k: "shinL", cx: 39, cy: 88, rx: 5, ry: 6 },
+  { k: "shinR", cx: 61, cy: 88, rx: 5, ry: 6 },
+  { k: "footL", cx: 38, cy: 95.5, rx: 5.5, ry: 3 },
+  { k: "footR", cx: 62, cy: 95.5, rx: 5.5, ry: 3 },
+];
+
+const BACK_PHOTO_HITZONES = [
+  { k: "head", cx: 50, cy: 12, rx: 13, ry: 8 },
+  { k: "neck", cx: 50, cy: 21, rx: 6, ry: 2.6 },
+  { k: "shoulderL", cx: 31, cy: 26.5, rx: 10, ry: 4 },
+  { k: "shoulderR", cx: 69, cy: 26.5, rx: 10, ry: 4 },
+  { k: "upperBackL", cx: 38, cy: 32, rx: 11, ry: 5 },
+  { k: "upperBackR", cx: 62, cy: 32, rx: 11, ry: 5 },
+  { k: "lowerBack", cx: 50, cy: 43, rx: 15, ry: 6 },
+  { k: "glutesL", cx: 39, cy: 55, rx: 10, ry: 6 },
+  { k: "glutesR", cx: 61, cy: 55, rx: 10, ry: 6 },
+  { k: "armL", cx: 21, cy: 40, rx: 6.5, ry: 12 },
+  { k: "armR", cx: 79, cy: 40, rx: 6.5, ry: 12 },
+  { k: "handL", cx: 15, cy: 53.5, rx: 5.5, ry: 4.2 },
+  { k: "handR", cx: 85, cy: 53.5, rx: 5.5, ry: 4.2 },
+  { k: "legL", cx: 38, cy: 68, rx: 8.5, ry: 10 },
+  { k: "legR", cx: 62, cy: 68, rx: 8.5, ry: 10 },
+  { k: "kneeL", cx: 39, cy: 80, rx: 6, ry: 3.5 },
+  { k: "kneeR", cx: 61, cy: 80, rx: 6, ry: 3.5 },
+  { k: "shinL", cx: 39, cy: 88, rx: 5, ry: 6 },
+  { k: "shinR", cx: 61, cy: 88, rx: 5, ry: 6 },
+  { k: "footL", cx: 38, cy: 95.5, rx: 5.5, ry: 3 },
+  { k: "footR", cx: 62, cy: 95.5, rx: 5.5, ry: 3 },
+];
+
+// Body type now selects between three real photographed builds instead of scaling one
+// vector shape — "b2" (default) is the original reference photo; "b1"/"b3" are generated
+// variants matched to it (same face, hair, pose, framing), just a slimmer or fuller build.
+const BODY_PHOTO_VARIANT = { b1: "-slim", b2: "", b3: "-full" };
 
 // Pain quality descriptors, paired with location on the body map. This is the same
 // location + quality pairing clinical pain body maps use (PainScale, CHOIR), so the
@@ -887,6 +958,7 @@ export default function Whimsy() {
   const [hairStyle, setHairStyle] = useState("afro");
   const [hairColor, setHairColor] = useState("black");
   const [wrapColor, setWrapColor] = useState("plum");
+  const [bodysuitColor, setBodysuitColor] = useState("blush");
   const [textScale, setTextScale] = useState("default");
   const [motionOff, setMotionOff] = useState(false);
   const [reminderOn, setReminderOn] = useState(false);
@@ -916,6 +988,7 @@ export default function Whimsy() {
   const activeBodyShape = BODY_SHAPES.find((s) => s.key === bodyShape) || BODY_SHAPES[1];
   const activeHairColor = HAIR_COLORS.find((h) => h.key === hairColor) || HAIR_COLORS[0];
   const activeWrapColor = WRAP_COLORS.find((w) => w.key === wrapColor) || WRAP_COLORS[0];
+  const activeBodysuitColor = BODYSUIT_COLORS.find((b) => b.key === bodysuitColor) || BODYSUIT_COLORS[0];
   const activeScale = TEXT_SCALES.find((s) => s.key === textScale) || TEXT_SCALES[0];
 
   useEffect(() => {
@@ -1554,6 +1627,17 @@ export default function Whimsy() {
         ))}
       </div>
 
+      <p className={labelCls} style={{ color: COLORS.inkSoft }}>Bodysuit color</p>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {BODYSUIT_COLORS.map((b) => (
+          <button key={b.key} onClick={() => setBodysuitColor(b.key)} aria-label={b.label}
+            className="w-9 h-9 rounded-full focus:outline-none focus-visible:ring-2 flex items-center justify-center"
+            style={{ background: b.hex, border: bodysuitColor === b.key ? `3px solid ${COLORS.plumDark}` : `1px solid ${COLORS.line}` }}>
+            {bodysuitColor === b.key && <Check size={14} color="#fff" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,0.5))" }} />}
+          </button>
+        ))}
+      </div>
+
       <p className={labelCls} style={{ color: COLORS.inkSoft }}>Hairstyle</p>
       <div className="flex flex-wrap gap-2 mb-4">
         {HAIRSTYLES.map((h) => (
@@ -1685,6 +1769,9 @@ export default function Whimsy() {
         @keyframes flyIn{from{opacity:0;transform:translateX(-70px) translateY(12px) rotate(-8deg)}to{opacity:1;transform:none}}
         .bodypart{cursor:pointer;transition:fill .2s ease,stroke .2s ease;}
         .bodypart:active{opacity:.75;}
+        .bodypart-photo{cursor:pointer;transition:fill .18s ease,stroke .18s ease;outline:none;}
+        .bodypart-photo:hover{fill:rgba(122,46,77,0.16);}
+        .bodypart-photo:active{opacity:.8;}
         .ache{animation:ache 2.2s ease-in-out infinite;}
         @keyframes ache{0%,100%{opacity:.14}50%{opacity:.4}}
         .spoon-btn{transition:transform .12s ease;}
@@ -2021,6 +2108,7 @@ export default function Whimsy() {
                 <span className="text-[11px]" style={{ color: COLORS.inkSoft }}>tap where it aches</span>
               </div>
               <BodyMap selected={painAreas} setSelected={setPainAreas} skin={activeSkin} shape={activeBodyShape} hairStyle={hairStyle} hairColorHex={activeHairColor.hex}
+                bodysuitColorHex={activeBodysuitColor.hex} bodysuitIsDefault={bodysuitColor === "blush"} skinIsDefault={skinTone === "blush"}
                 onOpenAppearance={() => setAppearanceOpen(true)} />
               {painAreas.length > 0 && (
                 <p className="text-xs mt-2 text-center" style={{ color: COLORS.plumDark, fontFamily: SERIF, fontStyle: "italic" }}>
@@ -3445,40 +3533,20 @@ function getHairOverlay(styleKey, hairColor) {
   return { behind, scalp, above };
 }
 
-function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, onOpenAppearance }) {
+function BodyMap({ selected, setSelected, skin, shape, bodysuitColorHex, bodysuitIsDefault, skinIsDefault, onOpenAppearance }) {
   const [view, setView] = useState("front");
   const toggle = (k) => setSelected(selected.includes(k) ? selected.filter((x) => x !== k) : [...selected, k]);
-  const viewParts = BODY_MAP.filter((b) => b.d && (b.view === "both" || b.view === view));
+  const hitzones = view === "front" ? FRONT_PHOTO_HITZONES : BACK_PHOTO_HITZONES;
   const chips = BODY_MAP.filter((b) => !b.d);
   const allOver = selected.includes("allOver");
   const jointKeys = ["shoulderL", "shoulderR", "handL", "handR", "kneeL", "kneeR", "abdomenRLQ", "abdomenLLQ", "glutesL", "glutesR"];
   const joints = selected.includes("joints");
   const isOn = (k) => selected.includes(k) || allOver || (joints && jointKeys.includes(k));
+  const suffix = BODY_PHOTO_VARIANT[shape?.key] ?? "";
+  const photoSrc = `/assets/body-map/whimsy-body-${view}${suffix}.png`;
+  const skinMaskSrc = `/assets/body-map/mask-skin-${view}${suffix}.png`;
+  const clothingMaskSrc = `/assets/body-map/mask-clothing-${view}${suffix}.png`;
   const skinFill = skin?.fill || "#F6D9DE";
-  const skinLine = skin?.glow || "#DFA6BA";
-  // The outline is always the same skin tone, just darker — not a separately authored color
-  // and not one fixed black for every tone. This means it naturally scales with the tone
-  // picked: the light blush default gets a dark dusty-pink line, and deep skin gets a line
-  // dark enough to read as black, without ever needing a special case per tone.
-  const feature = darken(skinFill, 0.38);
-  // A gentler, warmer line for the most delicate facial detail (brows, eyelids, nose bridge)
-  // — full-strength `feature` reads as sculpted on the body outline and jaw, but was too
-  // harsh/inky for the softer, rounder look of a friendly illustrated face.
-  const soft = mixHex(feature, skinFill, 0.4);
-  const iris = mixHex(feature, "#8B5A2B", 0.5);
-  // Brows were tied to skin tone via "soft", so picking a light or gray hair color never
-  // showed up on the face. Blending the actual chosen hair color with skin keeps the same
-  // gentle, low-contrast look while making brows track hair color like real ones do.
-  const browColor = mixHex(hairColorHex || "#3B2417", skinFill, 0.25);
-  const lip = mixHex(COLORS.plum, skinFill, 0.3);
-  const lipLine = mixHex(COLORS.plumDark, skinFill, 0.35);
-  const scaleX = shape?.scaleX ?? 1;
-  // scaleX alone only ever resized the same silhouette — the three body types looked like
-  // the same shape at different zoom levels. "curve" scales the bust fullness and the
-  // waist/hip contour independently of overall width, so each type reads as an actually
-  // different proportion, not just a bigger/smaller version of one shape.
-  const curveAmt = shape?.curve ?? 1;
-  const hair = getHairOverlay(hairStyle, hairColorHex || "#3B2417");
   return (
     <div>
       <div className="flex items-center justify-center gap-2 mb-2">
@@ -3498,105 +3566,50 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
           </button>
         )}
       </div>
-      <div className="rounded-3xl py-3 flex justify-center relative overflow-hidden"
+      <div className="rounded-3xl relative overflow-hidden"
         style={{ background: "radial-gradient(130px 165px at 50% 48%, #FEF8FA 0%, #FBF1EC 100%)", border: `1px solid ${COLORS.line}` }}>
-        <span className="whimsy-sway absolute" style={{ left: 12, bottom: 6, opacity: 0.3 }}><Sprig size={22} /></span>
-        <span className="whimsy-float absolute" style={{ right: 14, top: 8, opacity: 0.5 }}><Sparkles size={13} style={{ color: COLORS.gold }} /></span>
-        <svg width="126" height="205" viewBox="14 -1 72 172" aria-label={`Body map, ${view} view. Tap where it aches.`}>
-          <defs>
-            <radialGradient id={`skinGrad-${skin?.key || "default"}`} cx="38%" cy="20%" r="95%">
-              <stop offset="0%" stopColor={lighten(skinFill, 0.35)} />
-              <stop offset="55%" stopColor={skinFill} />
-              <stop offset="100%" stopColor={skinLine} />
-            </radialGradient>
-            <filter id="softFace" x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="0.3" />
-            </filter>
-            <filter id="softHair" x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="0.18" />
-            </filter>
-          </defs>
-          <g transform={`translate(50,0) scale(${scaleX},1) translate(-50,0)`}>
-            {hair.behind}
-            <path d={BODY_OUTLINE} fill={`url(#skinGrad-${skin?.key || "default"})`} stroke="none" />
-            {viewParts.map((b) => {
-              const on = isOn(b.k);
+        <span className="whimsy-sway absolute" style={{ left: 12, bottom: 6, opacity: 0.3, zIndex: 3 }}><Sprig size={22} /></span>
+        <span className="whimsy-float absolute" style={{ right: 14, top: 8, opacity: 0.5, zIndex: 3 }}><Sparkles size={13} style={{ color: COLORS.gold }} /></span>
+        <div className="relative mx-auto" style={{ width: "78%", aspectRatio: "927 / 1696" }}
+          aria-label={`Body map, ${view} view. Tap where it aches.`}>
+          <img key={photoSrc} src={photoSrc} alt="" draggable={false}
+            className="absolute inset-0 w-full h-full object-cover select-none"
+            style={{ borderRadius: 18 }} />
+          {!skinIsDefault && (
+            <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{
+              background: skinFill,
+              WebkitMaskImage: `url(${skinMaskSrc})`, maskImage: `url(${skinMaskSrc})`,
+              WebkitMaskSize: "100% 100%", maskSize: "100% 100%",
+              WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat",
+              mixBlendMode: "hue", opacity: 0.7, borderRadius: 18,
+            }} />
+          )}
+          {!bodysuitIsDefault && (
+            <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{
+              background: bodysuitColorHex,
+              WebkitMaskImage: `url(${clothingMaskSrc})`, maskImage: `url(${clothingMaskSrc})`,
+              WebkitMaskSize: "100% 100%", maskSize: "100% 100%",
+              WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat",
+              mixBlendMode: "hue", opacity: 0.85, borderRadius: 18,
+            }} />
+          )}
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            {hitzones.map((z) => {
+              const on = isOn(z.k);
+              const label = BODY_MAP.find((b) => b.k === z.k)?.label || z.k;
               return (
-                <path key={b.k} d={b.d} onClick={() => toggle(b.k)} aria-label={b.label}
+                <ellipse key={z.k} cx={z.cx} cy={z.cy} rx={z.rx} ry={z.ry}
+                  onClick={() => toggle(z.k)} aria-label={label}
                   role="button" tabIndex={0} aria-pressed={on}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(b.k); } }}
-                  className="bodypart"
-                  fill={on ? COLORS.plum : "transparent"}
-                  stroke={on ? COLORS.plumDark : feature}
-                  strokeWidth={on ? 0.9 : 0.5} strokeLinejoin="round" />
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(z.k); } }}
+                  className="bodypart-photo"
+                  fill={on ? "rgba(122,46,77,0.38)" : "transparent"}
+                  stroke={on ? COLORS.plumDark : "transparent"}
+                  strokeWidth={on ? 0.6 : 0} vectorEffect="non-scaling-stroke" />
               );
             })}
-            {viewParts.filter((b) => isOn(b.k)).map((b) => (
-              <path key={b.k + "-glow"} d={b.d} fill="none" stroke={COLORS.plum} strokeWidth="2.6" opacity="0.3" className="ache" style={{ pointerEvents: "none" }} />
-            ))}
-            <path d={BODY_OUTLINE} fill="none" stroke={feature} strokeWidth="1.1" strokeLinejoin="round" style={{ pointerEvents: "none" }} />
-            <g style={{ pointerEvents: "none", filter: "url(#softHair)" }}>{hair.scalp}</g>
-            {view === "front" ? (
-              <g style={{ pointerEvents: "none", filter: "url(#softFace)" }}>
-                <g opacity="0.32">
-                  <path d="M41 10.5 Q39 15 40.5 19.5 Q41.5 22.5 43.5 25" fill="none" stroke={soft} strokeWidth="0.45" strokeLinecap="round" />
-                  <path d="M59 10.5 Q61 15 59.5 19.5 Q58.5 22.5 56.5 25" fill="none" stroke={soft} strokeWidth="0.45" strokeLinecap="round" />
-                </g>
-                <g opacity="0.65">
-                  <path d="M43.3 11.7 Q45.4 10.5 47.6 11.5" fill="none" stroke={browColor} strokeWidth="0.4" strokeLinecap="round" />
-                  <path d="M52.4 11.5 Q54.6 10.5 56.7 11.7" fill="none" stroke={browColor} strokeWidth="0.4" strokeLinecap="round" />
-                </g>
-                <g>
-                  <path d="M42.8 14 Q45.4 11.7 48 14 Q45.4 15.8 42.8 14 Z" fill="#FFFBF6" opacity="0.95" />
-                  <path d="M42.8 14 Q45.4 11.7 48 14 Q45.4 15.8 42.8 14 Z" fill="none" stroke={soft} strokeWidth="0.35" opacity="0.6" />
-                  <path d="M52 14 Q54.6 11.7 57.2 14 Q54.6 15.8 52 14 Z" fill="#FFFBF6" opacity="0.95" />
-                  <path d="M52 14 Q54.6 11.7 57.2 14 Q54.6 15.8 52 14 Z" fill="none" stroke={soft} strokeWidth="0.35" opacity="0.6" />
-                  <circle cx="45.4" cy="14.1" r="1.15" fill={iris} opacity="0.92" />
-                  <circle cx="54.6" cy="14.1" r="1.15" fill={iris} opacity="0.92" />
-                  <circle cx="45.4" cy="14.1" r="0.5" fill="#241708" opacity="0.9" />
-                  <circle cx="54.6" cy="14.1" r="0.5" fill="#241708" opacity="0.9" />
-                  <circle cx="45.75" cy="13.65" r="0.25" fill="#fff" opacity="0.95" />
-                  <circle cx="54.95" cy="13.65" r="0.25" fill="#fff" opacity="0.95" />
-                  <path d="M46.9 13.1 L47.7 12.3" stroke={soft} strokeWidth="0.3" strokeLinecap="round" opacity="0.4" />
-                  <path d="M53.1 13.1 L52.3 12.3" stroke={soft} strokeWidth="0.3" strokeLinecap="round" opacity="0.4" />
-                </g>
-                <g opacity="0.5">
-                  <path d="M49.6 13.9 Q49.1 16.9 49.3 18.4" fill="none" stroke={soft} strokeWidth="0.4" strokeLinecap="round" />
-                  <path d="M47.7 18.7 Q47.4 19.5 48.2 19.9 Q49 20.3 50 20 Q51 20.3 51.8 19.9 Q52.6 19.5 52.3 18.7 Q51.2 19.7 50 19.4 Q48.8 19.7 47.7 18.7 Z"
-                    fill={skinFill} stroke={soft} strokeWidth="0.35" />
-                </g>
-                <g>
-                  <path d="M45.7 21.7 Q47.6 20.2 49 21.1 Q50 20.5 51 21.1 Q52.4 20.2 54.3 21.7 Q50 22.6 45.7 21.7 Z"
-                    fill={lip} opacity="0.88" stroke={lipLine} strokeWidth="0.25" />
-                  <path d="M45.7 21.7 Q50 26.2 54.3 21.7 Q50 24 45.7 21.7 Z"
-                    fill={lip} opacity="0.95" stroke={lipLine} strokeWidth="0.3" />
-                  <path d="M45.7 21.7 L54.3 21.7" stroke={lipLine} strokeWidth="0.25" opacity="0.35" />
-                </g>
-                <path d="M43.5 24.5 Q46.3 28.2 50 28.9 Q53.7 28.2 56.5 24.5" fill="none" stroke={soft} strokeWidth="0.45" strokeLinecap="round" opacity="0.4" />
-                <path d="M40 38.5 Q50 41 60 38.5" fill="none" stroke={feature} strokeWidth="0.5" opacity="0.4" />
-                <g transform={`translate(50,44) scale(${curveAmt}) translate(-50,-44)`}>
-                  <path d="M39.5 42 C37 46.5 38 51 43 52.5 C46.5 51.5 48.5 48 49 44.5 C47.5 41.5 43 40.5 39.5 42 Z"
-                    fill={skinFill} opacity="0.6" stroke={feature} strokeWidth="0.5" />
-                  <path d="M60.5 42 C63 46.5 62 51 57 52.5 C53.5 51.5 51.5 48 51 44.5 C52.5 41.5 57 40.5 60.5 42 Z"
-                    fill={skinFill} opacity="0.6" stroke={feature} strokeWidth="0.5" />
-                  <path d="M50 41.5 L50 45.5" stroke={feature} strokeWidth="0.4" opacity="0.45" />
-                </g>
-                <g opacity={0.22 + (curveAmt - 1) * 0.18}>
-                  <path d={`M40 46 Q${40 - (curveAmt - 1) * 3.5} 55 41 63`} fill="none" stroke={soft} strokeWidth="0.5" strokeLinecap="round" />
-                  <path d={`M60 46 Q${60 + (curveAmt - 1) * 3.5} 55 59 63`} fill="none" stroke={soft} strokeWidth="0.5" strokeLinecap="round" />
-                </g>
-                <ellipse cx="50" cy="63" rx="0.5" ry="0.7" fill="none" stroke={feature} strokeWidth="0.5" opacity="0.55" />
-              </g>
-            ) : (
-              <g style={{ pointerEvents: "none" }}>
-                <path d="M50 36 L50 73" stroke={feature} strokeWidth="0.6" opacity="0.55" strokeDasharray="1.2 2" />
-                <path d={`M40 40 Q${46 - (curveAmt - 1) * 3} 46 42 54`} fill="none" stroke={feature} strokeWidth="0.5" opacity="0.5" />
-                <path d={`M60 40 Q${54 + (curveAmt - 1) * 3} 46 58 54`} fill="none" stroke={feature} strokeWidth="0.5" opacity="0.5" />
-              </g>
-            )}
-            <g style={{ pointerEvents: "none", filter: "url(#softHair)" }}>{hair.above}</g>
-          </g>
-        </svg>
+          </svg>
+        </div>
       </div>
       <p className="text-center text-[0.68rem] mt-1.5 italic" style={{ color: COLORS.inkSoft }}>
         {view === "front" ? "Facing you" : "Facing away from you"}
