@@ -3533,6 +3533,46 @@ function getHairOverlay(styleKey, hairColor) {
   return { behind, scalp, above };
 }
 
+// Recolors a photo region using a grayscale mask (white = recolor, black = leave alone).
+// CSS `mask-image` + `mix-blend-mode` together turned out to be unreliable across browsers —
+// on some renders the blend ignored the mask's transparent areas entirely and washed the
+// whole photo (including hands/feet) in the overlay color. Baking the mask into a real PNG
+// alpha channel via canvas, then blending that fully-opaque/fully-transparent image, sidesteps
+// that bug: mix-blend-mode only ever touches pixels the canvas actually painted.
+function RecolorLayer({ maskSrc, colorHex, opacity, borderRadius }) {
+  const [dataUrl, setDataUrl] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    setDataUrl(null);
+    const img = new Image();
+    img.onload = () => {
+      if (cancelled) return;
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const [r, g, b] = parseColor(colorHex);
+      const d = frame.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const luminance = d[i]; // mask is grayscale — R channel holds the intended alpha
+        d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = luminance;
+      }
+      ctx.putImageData(frame, 0, 0);
+      setDataUrl(canvas.toDataURL());
+    };
+    img.src = maskSrc;
+    return () => { cancelled = true; };
+  }, [maskSrc, colorHex]);
+  if (!dataUrl) return null;
+  return (
+    <img aria-hidden="true" src={dataUrl} alt="" draggable={false}
+      className="absolute inset-0 w-full h-full pointer-events-none select-none"
+      style={{ mixBlendMode: "hue", opacity, borderRadius }} />
+  );
+}
+
 function BodyMap({ selected, setSelected, skin, shape, bodysuitColorHex, bodysuitIsDefault, skinIsDefault, onOpenAppearance }) {
   const [view, setView] = useState("front");
   const toggle = (k) => setSelected(selected.includes(k) ? selected.filter((x) => x !== k) : [...selected, k]);
@@ -3576,22 +3616,10 @@ function BodyMap({ selected, setSelected, skin, shape, bodysuitColorHex, bodysui
             className="absolute inset-0 w-full h-full object-cover select-none"
             style={{ borderRadius: 18 }} />
           {!skinIsDefault && (
-            <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{
-              background: skinFill,
-              WebkitMaskImage: `url(${skinMaskSrc})`, maskImage: `url(${skinMaskSrc})`,
-              WebkitMaskSize: "100% 100%", maskSize: "100% 100%",
-              WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat",
-              mixBlendMode: "hue", opacity: 0.7, borderRadius: 18,
-            }} />
+            <RecolorLayer key={"skin-" + skinMaskSrc} maskSrc={skinMaskSrc} colorHex={skinFill} opacity={0.7} borderRadius={18} />
           )}
           {!bodysuitIsDefault && (
-            <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{
-              background: bodysuitColorHex,
-              WebkitMaskImage: `url(${clothingMaskSrc})`, maskImage: `url(${clothingMaskSrc})`,
-              WebkitMaskSize: "100% 100%", maskSize: "100% 100%",
-              WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat",
-              mixBlendMode: "hue", opacity: 0.85, borderRadius: 18,
-            }} />
+            <RecolorLayer key={"cloth-" + clothingMaskSrc} maskSrc={clothingMaskSrc} colorHex={bodysuitColorHex} opacity={0.85} borderRadius={18} />
           )}
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             {hitzones.map((z) => {
