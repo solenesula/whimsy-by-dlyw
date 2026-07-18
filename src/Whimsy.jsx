@@ -1713,8 +1713,9 @@ export default function Whimsy() {
         @keyframes flyIn{from{opacity:0;transform:translateX(-70px) translateY(12px) rotate(-8deg)}to{opacity:1;transform:none}}
         .bodypart{cursor:pointer;transition:fill .2s ease,stroke .2s ease;}
         .bodypart:active{opacity:.75;}
-        .bodypart-photo{cursor:pointer;transition:fill .2s ease,stroke .2s ease;}
+        .bodypart-photo{cursor:pointer;transition:fill .2s ease,stroke .2s ease;outline:none;}
         .bodypart-photo:hover{fill:rgba(214,79,132,0.16);}
+        .bodypart-photo:focus{outline:none;}
         .bodypart-photo:focus-visible{outline:2px solid #571F33;outline-offset:1px;}
         .bodypart-photo:active{opacity:.75;}
         .ache{animation:ache 2.2s ease-in-out infinite;}
@@ -3536,7 +3537,7 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
         <span className="whimsy-float absolute" style={{ right: 14, top: 8, opacity: 0.5 }}><Sparkles size={13} style={{ color: COLORS.gold }} /></span>
         {view === "front" ? (
           <div className="rounded-2xl overflow-hidden relative" role="group" aria-label="Front view of a body. Tap where it aches."
-            style={{ width: "46vw", maxWidth: 188, minWidth: 168, aspectRatio: "927 / 1696", boxShadow: "0 6px 18px rgba(87,31,51,0.14)" }}>
+            style={{ width: "46vw", maxWidth: 188, minWidth: 168, aspectRatio: "927 / 1696", background: "radial-gradient(130px 165px at 50% 48%, #FEF8FA 0%, #FBF1EC 100%)" }}>
             <img src="/assets/body-map/whimsy-body-front.png" alt=""
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none", userSelect: "none" }}
               draggable={false} />
@@ -3545,9 +3546,13 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
               {FRONT_PHOTO_HITZONES.map((z) => {
                 const b = BODY_MAP.find((bb) => bb.k === z.k);
                 const on = isOn(z.k);
+                // Rendered as a soft organic blob (ellipse) hugging the limb/region rather
+                // than a hard-edged rectangle, so a selection reads like a gentle highlight
+                // on the body itself rather than a box pasted over the photo.
+                const cx = z.x + z.w / 2, cy = z.y + z.h / 2, rx = z.w / 2, ry = z.h / 2;
                 return (
                   <g key={z.k}>
-                    <rect x={z.x} y={z.y} width={z.w} height={z.h} rx="2.5"
+                    <ellipse cx={cx} cy={cy} rx={rx} ry={ry}
                       onClick={() => toggle(z.k)} aria-label={b?.label || z.k}
                       role="button" tabIndex={0} aria-pressed={on}
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(z.k); } }}
@@ -3556,7 +3561,7 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
                       stroke={on ? "#571F33" : "transparent"}
                       strokeWidth={on ? 0.7 : 0} />
                     {on && (
-                      <rect x={z.x} y={z.y} width={z.w} height={z.h} rx="2.5" fill="none" stroke="#571F33"
+                      <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="none" stroke="#571F33"
                         strokeWidth="1.4" opacity="0.35" className="ache" style={{ pointerEvents: "none" }} />
                     )}
                   </g>
