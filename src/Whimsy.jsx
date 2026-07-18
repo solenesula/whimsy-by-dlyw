@@ -164,6 +164,34 @@ const BODY_MAP = [
   { k: "joints", label: "Joints everywhere", view: "both", d: "" },
 ];
 
+// Clickable hit-zones for the real front-view photo (percent of image width/height,
+// measured from the actual photo's silhouette so the transparent overlay lines up with
+// the person in the picture). The back view still uses the hand-drawn BODY_MAP paths
+// above, since there's no matching back-view photo yet.
+const FRONT_PHOTO_HITZONES = [
+  { k: "head", x: 37, y: 4, w: 26, h: 16.5 },
+  { k: "neck", x: 43, y: 19, w: 16, h: 5.5 },
+  { k: "shoulderL", x: 25, y: 20, w: 16, h: 9 },
+  { k: "shoulderR", x: 61, y: 20, w: 16, h: 9 },
+  { k: "armL", x: 12, y: 27, w: 22, h: 29 },
+  { k: "armR", x: 68, y: 27, w: 22, h: 29 },
+  { k: "handL", x: 6, y: 54, w: 19, h: 12 },
+  { k: "handR", x: 77, y: 54, w: 19, h: 12 },
+  { k: "chest", x: 34, y: 26, w: 32, h: 15 },
+  { k: "abdomenRUQ", x: 34, y: 41, w: 16, h: 8 },
+  { k: "abdomenLUQ", x: 50, y: 41, w: 16, h: 8 },
+  { k: "abdomenRLQ", x: 32, y: 49, w: 18, h: 8 },
+  { k: "abdomenLLQ", x: 50, y: 49, w: 18, h: 8 },
+  { k: "legL", x: 25, y: 59, w: 25, h: 23 },
+  { k: "legR", x: 51, y: 59, w: 25, h: 23 },
+  { k: "kneeL", x: 27, y: 81, w: 14, h: 5.5 },
+  { k: "kneeR", x: 60, y: 81, w: 14, h: 5.5 },
+  { k: "shinL", x: 28, y: 85.5, w: 12, h: 8 },
+  { k: "shinR", x: 61, y: 85.5, w: 12, h: 8 },
+  { k: "footL", x: 26, y: 92, w: 14, h: 5 },
+  { k: "footR", x: 60, y: 92, w: 14, h: 5 },
+];
+
 // Pain quality descriptors, paired with location on the body map. This is the same
 // location + quality pairing clinical pain body maps use (PainScale, CHOIR), so the
 // exported summary reads like something a pain specialist or rheumatologist would use.
@@ -1685,6 +1713,10 @@ export default function Whimsy() {
         @keyframes flyIn{from{opacity:0;transform:translateX(-70px) translateY(12px) rotate(-8deg)}to{opacity:1;transform:none}}
         .bodypart{cursor:pointer;transition:fill .2s ease,stroke .2s ease;}
         .bodypart:active{opacity:.75;}
+        .bodypart-photo{cursor:pointer;transition:fill .2s ease,stroke .2s ease;}
+        .bodypart-photo:hover{fill:rgba(214,79,132,0.16);}
+        .bodypart-photo:focus-visible{outline:2px solid #571F33;outline-offset:1px;}
+        .bodypart-photo:active{opacity:.75;}
         .ache{animation:ache 2.2s ease-in-out infinite;}
         @keyframes ache{0%,100%{opacity:.14}50%{opacity:.4}}
         .spoon-btn{transition:transform .12s ease;}
@@ -3502,6 +3534,37 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
         style={{ background: "radial-gradient(130px 165px at 50% 48%, #FEF8FA 0%, #FBF1EC 100%)", border: `1px solid ${COLORS.line}` }}>
         <span className="whimsy-sway absolute" style={{ left: 12, bottom: 6, opacity: 0.3 }}><Sprig size={22} /></span>
         <span className="whimsy-float absolute" style={{ right: 14, top: 8, opacity: 0.5 }}><Sparkles size={13} style={{ color: COLORS.gold }} /></span>
+        {view === "front" ? (
+          <div className="rounded-2xl overflow-hidden relative" role="group" aria-label="Front view of a body. Tap where it aches."
+            style={{ width: "46vw", maxWidth: 188, minWidth: 168, aspectRatio: "927 / 1696", boxShadow: "0 6px 18px rgba(87,31,51,0.14)" }}>
+            <img src="/assets/body-map/whimsy-body-front.png" alt=""
+              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none", userSelect: "none" }}
+              draggable={false} />
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+              {FRONT_PHOTO_HITZONES.map((z) => {
+                const b = BODY_MAP.find((bb) => bb.k === z.k);
+                const on = isOn(z.k);
+                return (
+                  <g key={z.k}>
+                    <rect x={z.x} y={z.y} width={z.w} height={z.h} rx="2.5"
+                      onClick={() => toggle(z.k)} aria-label={b?.label || z.k}
+                      role="button" tabIndex={0} aria-pressed={on}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(z.k); } }}
+                      className="bodypart-photo"
+                      fill={on ? "rgba(214, 79, 132, 0.38)" : "transparent"}
+                      stroke={on ? "#571F33" : "transparent"}
+                      strokeWidth={on ? 0.7 : 0} />
+                    {on && (
+                      <rect x={z.x} y={z.y} width={z.w} height={z.h} rx="2.5" fill="none" stroke="#571F33"
+                        strokeWidth="1.4" opacity="0.35" className="ache" style={{ pointerEvents: "none" }} />
+                    )}
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+        ) : (
         <svg width="126" height="205" viewBox="14 -1 72 172" aria-label={`Body map, ${view} view. Tap where it aches.`}>
           <defs>
             {/* A soft lit side (upper-left) to shadow side (lower-right) gradient, so the
@@ -3620,6 +3683,7 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
             <g style={{ pointerEvents: "none", filter: "url(#softHair)" }}>{hair.above}</g>
           </g>
         </svg>
+        )}
       </div>
       <p className="text-center text-[0.68rem] mt-1.5 italic" style={{ color: COLORS.inkSoft }}>
         {view === "front" ? "Facing you" : "Facing away from you"}
