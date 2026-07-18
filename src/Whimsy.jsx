@@ -955,7 +955,7 @@ export default function Whimsy() {
   const [theme, setTheme] = useState("blush");
   const [skinTone, setSkinTone] = useState("blush");
   const [bodyShape, setBodyShape] = useState("b2");
-  const [hairStyle, setHairStyle] = useState("afro");
+  const [hairStyle, setHairStyle] = useState("bald");
   const [hairColor, setHairColor] = useState("black");
   const [wrapColor, setWrapColor] = useState("plum");
   const [bodysuitColor, setBodysuitColor] = useState("blush");
@@ -3573,7 +3573,7 @@ function RecolorLayer({ maskSrc, colorHex, opacity, borderRadius }) {
   );
 }
 
-function BodyMap({ selected, setSelected, skin, shape, bodysuitColorHex, bodysuitIsDefault, skinIsDefault, onOpenAppearance }) {
+function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, bodysuitColorHex, bodysuitIsDefault, skinIsDefault, onOpenAppearance }) {
   const [view, setView] = useState("front");
   const toggle = (k) => setSelected(selected.includes(k) ? selected.filter((x) => x !== k) : [...selected, k]);
   const hitzones = view === "front" ? FRONT_PHOTO_HITZONES : BACK_PHOTO_HITZONES;
@@ -3587,6 +3587,7 @@ function BodyMap({ selected, setSelected, skin, shape, bodysuitColorHex, bodysui
   const skinMaskSrc = `/assets/body-map/mask-skin-${view}${suffix}.png`;
   const clothingMaskSrc = `/assets/body-map/mask-clothing-${view}${suffix}.png`;
   const skinFill = skin?.fill || "#F6D9DE";
+  const hair = getHairOverlay(hairStyle || "bald", hairColorHex || "#241712");
   return (
     <div>
       <div className="flex items-center justify-center gap-2 mb-2">
@@ -3620,6 +3621,20 @@ function BodyMap({ selected, setSelected, skin, shape, bodysuitColorHex, bodysui
           )}
           {!bodysuitIsDefault && (
             <RecolorLayer key={"cloth-" + clothingMaskSrc} maskSrc={clothingMaskSrc} colorHex={bodysuitColorHex} opacity={0.85} borderRadius={18} />
+          )}
+          {hairStyle !== "bald" && (
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              {/* The hairstyle paths were authored against the old drawn-body's ~170-unit-tall
+                  coordinate space (head top at y~3, braid/loc tips down around y~40). The photo
+                  base now uses a 0-100 percent-of-image-height space where the bald head sits at
+                  roughly y 5-20%, so remap old_y -> old_y*0.595 + 5 to land hair back on the real
+                  photographed head instead of floating at the wrong scale/position. */}
+              <g transform="translate(0 5) scale(1 0.595)">
+                {hair.behind}
+                {hair.scalp}
+                {hair.above}
+              </g>
+            </svg>
           )}
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             {hitzones.map((z) => {
