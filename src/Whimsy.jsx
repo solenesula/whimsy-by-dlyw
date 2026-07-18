@@ -3337,28 +3337,33 @@ function getHairOverlay(styleKey, hairColor) {
       // helmet instead of hair. This builds a solid base cloud plus a ring of overlapping
       // "curl" circles around the silhouette edge so the outline itself looks bumpy/textured
       // like real coiled hair, with a shadow underneath and light flecks on top for depth.
+      // Sized to sit as a halo above and around the crown without reaching the eyebrow line
+      // (this photo's head is short/tight relative to the old illustrated reference these
+      // coordinates were first drawn against, so the cloud is deliberately smaller here than
+      // its old r=17/cy=15 to keep the bottom edge clear of the face).
       const darkC = darken(hairColor, 0.22), lightC = lighten(hairColor, 0.22);
+      const acx = 50, acy = 4, ar = 7;
       behind.push(
-        <circle key="afro-cloud" cx="50" cy="15" r="17" fill={hairColor} opacity="0.92" />,
-        <circle key="afro-shadow" cx="50" cy="20" r="15.5" fill={darkC} opacity="0.35" />
+        <circle key="afro-cloud" cx={acx} cy={acy} r={ar} fill={hairColor} opacity="0.92" />,
+        <circle key="afro-shadow" cx={acx} cy={acy + 2} r={ar * 0.91} fill={darkC} opacity="0.35" />
       );
       const n = 26;
       for (let i = 0; i < n; i++) {
         const a = (i / n) * Math.PI * 2;
-        const rad = 15.5 + (i % 3) * 1.4;
-        const cx = 50 + Math.cos(a) * rad;
-        const cy = 15 + Math.sin(a) * rad * 0.95;
+        const rad = ar * 0.91 + (i % 3) * 0.6;
+        const cx = acx + Math.cos(a) * rad;
+        const cy = acy + Math.sin(a) * rad * 0.95;
         const tone = i % 5 === 0 ? lightC : i % 3 === 0 ? darkC : hairColor;
         behind.push(
-          <circle key={"curl" + i} cx={cx} cy={cy} r={1.5 + (i % 2) * 0.6} fill={tone} opacity={i % 5 === 0 ? 0.55 : 0.8} />
+          <circle key={"curl" + i} cx={cx} cy={cy} r={0.65 + (i % 2) * 0.25} fill={tone} opacity={i % 5 === 0 ? 0.55 : 0.8} />
         );
       }
       // A few tighter inner curls near the crown so the texture doesn't read as hollow.
       for (let i = 0; i < 10; i++) {
         const a = (i / 10) * Math.PI * 2 + 0.3;
-        const cx = 50 + Math.cos(a) * 9;
-        const cy = 12 + Math.sin(a) * 8;
-        behind.push(<circle key={"innercurl" + i} cx={cx} cy={cy} r="1.3" fill={i % 2 === 0 ? darkC : hairColor} opacity="0.5" />);
+        const cx = acx + Math.cos(a) * 3.7;
+        const cy = acy - 1 + Math.sin(a) * 3.3;
+        behind.push(<circle key={"innercurl" + i} cx={cx} cy={cy} r="0.55" fill={i % 2 === 0 ? darkC : hairColor} opacity="0.5" />);
       }
       break;
     }
