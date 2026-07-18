@@ -110,6 +110,19 @@ const WRAP_COLORS = [
   { key: "black", label: "Black", hex: "#241712" },
 ];
 
+// The photo body map's tank top + leggings are recolored live (not swapped photos) via a
+// CSS mask + mix-blend-mode overlay, so this is its own small fabric palette. "Blush" is the
+// exact averaged tone of the original photo, so picking it back is visually a no-op.
+const BODYSUIT_COLORS = [
+  { key: "blush", label: "Blush (default)", hex: "#FAD4D7" },
+  { key: "rose", label: "Rose", hex: "#D65F84" },
+  { key: "plum", label: "Plum", hex: "#7A2E4D" },
+  { key: "sage", label: "Sage", hex: "#8FA68C" },
+  { key: "sky", label: "Sky", hex: "#7FA8C9" },
+  { key: "marigold", label: "Marigold", hex: "#D98E2B" },
+  { key: "black", label: "Black", hex: "#241712" },
+];
+
 const TEXT_SCALES = [
   { key: "default", label: "Default", pct: 100 },
   { key: "large", label: "Large", pct: 115 },
@@ -940,6 +953,7 @@ export default function Whimsy() {
   const [hairStyle, setHairStyle] = useState("afro");
   const [hairColor, setHairColor] = useState("black");
   const [wrapColor, setWrapColor] = useState("plum");
+  const [bodysuitColor, setBodysuitColor] = useState("blush");
   const [textScale, setTextScale] = useState("default");
   const [motionOff, setMotionOff] = useState(false);
   const [reminderOn, setReminderOn] = useState(false);
@@ -969,6 +983,7 @@ export default function Whimsy() {
   const activeBodyShape = BODY_SHAPES.find((s) => s.key === bodyShape) || BODY_SHAPES[1];
   const activeHairColor = HAIR_COLORS.find((h) => h.key === hairColor) || HAIR_COLORS[0];
   const activeWrapColor = WRAP_COLORS.find((w) => w.key === wrapColor) || WRAP_COLORS[0];
+  const activeBodysuitColor = BODYSUIT_COLORS.find((b) => b.key === bodysuitColor) || BODYSUIT_COLORS[0];
   const activeScale = TEXT_SCALES.find((s) => s.key === textScale) || TEXT_SCALES[0];
 
   useEffect(() => {
@@ -1004,6 +1019,7 @@ export default function Whimsy() {
       if (typeof tk.hairStyle === "string") setHairStyle(tk.hairStyle);
       if (typeof tk.hairColor === "string") setHairColor(tk.hairColor);
       if (typeof tk.wrapColor === "string") setWrapColor(tk.wrapColor);
+      if (typeof tk.bodysuitColor === "string") setBodysuitColor(tk.bodysuitColor);
       if (typeof tk.textScale === "string") setTextScale(tk.textScale);
       if (typeof tk.motionOff === "boolean") setMotionOff(tk.motionOff);
       if (typeof tk.reminderOn === "boolean") setReminderOn(tk.reminderOn);
@@ -1023,12 +1039,12 @@ export default function Whimsy() {
       store.set(TOOLKIT_KEY, {
         plan: tPlan, planType: tType, checked: tChecked, consent: rConsent,
         conditions: myConditions, name: myName, medHx, prepNotes, prepSpecialty,
-        setupDone, rSeen, theme, skinTone, bodyShape, hairStyle, hairColor, wrapColor, textScale, motionOff,
+        setupDone, rSeen, theme, skinTone, bodyShape, hairStyle, hairColor, wrapColor, bodysuitColor, textScale, motionOff,
         reminderOn, reminderTime, medSchedule,
       });
     }, 600);
     return () => clearTimeout(timer);
-  }, [tPlan, tType, tChecked, rConsent, myConditions, myName, medHx, prepNotes, prepSpecialty, setupDone, rSeen, theme, skinTone, bodyShape, hairStyle, hairColor, wrapColor, textScale, motionOff, reminderOn, reminderTime, medSchedule, loaded]);
+  }, [tPlan, tType, tChecked, rConsent, myConditions, myName, medHx, prepNotes, prepSpecialty, setupDone, rSeen, theme, skinTone, bodyShape, hairStyle, hairColor, wrapColor, bodysuitColor, textScale, motionOff, reminderOn, reminderTime, medSchedule, loaded]);
 
 
 
@@ -1645,6 +1661,18 @@ export default function Whimsy() {
         </>
       )}
 
+      <p className={labelCls} style={{ color: COLORS.inkSoft }}>Bodysuit color</p>
+      <p className="text-xs mb-2" style={{ color: COLORS.inkSoft }}>Recolors the tank top + leggings on the body map photo — your skin tone and this stay independent.</p>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {BODYSUIT_COLORS.map((b) => (
+          <button key={b.key} onClick={() => setBodysuitColor(b.key)} aria-label={b.label}
+            className="w-9 h-9 rounded-full focus:outline-none focus-visible:ring-2 flex items-center justify-center"
+            style={{ background: b.hex, border: bodysuitColor === b.key ? `3px solid ${COLORS.plumDark}` : `1px solid ${COLORS.line}` }}>
+            {bodysuitColor === b.key && <Check size={14} color="#fff" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,0.6))" }} />}
+          </button>
+        ))}
+      </div>
+
       <p className={labelCls} style={{ color: COLORS.inkSoft }}>Text size</p>
       <div className="grid grid-cols-3 gap-2 mb-4">
         {TEXT_SCALES.map((s) => (
@@ -2079,6 +2107,7 @@ export default function Whimsy() {
                 <span className="text-[11px]" style={{ color: COLORS.inkSoft }}>tap where it aches</span>
               </div>
               <BodyMap selected={painAreas} setSelected={setPainAreas} skin={activeSkin} shape={activeBodyShape} hairStyle={hairStyle} hairColorHex={activeHairColor.hex}
+                bodysuitColorHex={activeBodysuitColor.hex}
                 onOpenAppearance={() => setAppearanceOpen(true)} />
               {painAreas.length > 0 && (
                 <p className="text-xs mt-2 text-center" style={{ color: COLORS.plumDark, fontFamily: SERIF, fontStyle: "italic" }}>
@@ -3503,7 +3532,7 @@ function getHairOverlay(styleKey, hairColor) {
   return { behind, scalp, above };
 }
 
-function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, onOpenAppearance }) {
+function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, bodysuitColorHex, onOpenAppearance }) {
   const [view, setView] = useState("front");
   const toggle = (k) => setSelected(selected.includes(k) ? selected.filter((x) => x !== k) : [...selected, k]);
   const viewParts = BODY_MAP.filter((b) => b.d && (b.view === "both" || b.view === view));
@@ -3540,12 +3569,26 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
   // Shared renderer for the front/back photo + organic hit-zone overlay, so both views
   // stay visually and behaviorally identical (same blend into the card, same soft-blob
   // selection highlight, same accessibility wiring) without duplicating the JSX twice.
-  const renderPhotoBody = (src, zones, label) => (
+  const renderPhotoBody = (src, zones, label, skinMaskSrc, clothingMaskSrc) => (
     <div className="rounded-2xl overflow-hidden relative" role="group" aria-label={label}
       style={{ width: "46vw", maxWidth: 188, minWidth: 168, aspectRatio: "927 / 1696", background: "radial-gradient(130px 165px at 50% 48%, #FEF8FA 0%, #FBF1EC 100%)" }}>
       <img src={src} alt=""
         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none", userSelect: "none" }}
         draggable={false} />
+      {/* Skin tone and bodysuit color are recolored live on the real photo — not swapped
+          photos — using a CSS mask (an alpha shape traced from the actual photo's silhouette)
+          combined with mix-blend-mode: color, which keeps every fold/shadow/highlight from the
+          original photo and only shifts hue + saturation to the picked color. */}
+      <div aria-hidden="true" style={{
+        position: "absolute", inset: 0, backgroundColor: skin?.fill || "#F6D9DE", mixBlendMode: "color",
+        WebkitMaskImage: `url(${skinMaskSrc})`, maskImage: `url(${skinMaskSrc})`,
+        WebkitMaskSize: "100% 100%", maskSize: "100% 100%", pointerEvents: "none",
+      }} />
+      <div aria-hidden="true" style={{
+        position: "absolute", inset: 0, backgroundColor: bodysuitColorHex || "#FAD4D7", mixBlendMode: "color",
+        WebkitMaskImage: `url(${clothingMaskSrc})`, maskImage: `url(${clothingMaskSrc})`,
+        WebkitMaskSize: "100% 100%", maskSize: "100% 100%", pointerEvents: "none",
+      }} />
       <svg viewBox="0 0 100 100" preserveAspectRatio="none"
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
         {zones.map((z) => {
@@ -3596,8 +3639,10 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
         <span className="whimsy-sway absolute" style={{ left: 12, bottom: 6, opacity: 0.3 }}><Sprig size={22} /></span>
         <span className="whimsy-float absolute" style={{ right: 14, top: 8, opacity: 0.5 }}><Sparkles size={13} style={{ color: COLORS.gold }} /></span>
         {view === "front"
-          ? renderPhotoBody("/assets/body-map/whimsy-body-front.png", FRONT_PHOTO_HITZONES, "Front view of a body. Tap where it aches.")
-          : renderPhotoBody("/assets/body-map/whimsy-body-back.png", BACK_PHOTO_HITZONES, "Back view of a body. Tap where it aches.")}
+          ? renderPhotoBody("/assets/body-map/whimsy-body-front.png", FRONT_PHOTO_HITZONES, "Front view of a body. Tap where it aches.",
+              "/assets/body-map/mask-skin-front.png", "/assets/body-map/mask-clothing-front.png")
+          : renderPhotoBody("/assets/body-map/whimsy-body-back.png", BACK_PHOTO_HITZONES, "Back view of a body. Tap where it aches.",
+              "/assets/body-map/mask-skin-back.png", "/assets/body-map/mask-clothing-back.png")}
       </div>
       <p className="text-center text-[0.68rem] mt-1.5 italic" style={{ color: COLORS.inkSoft }}>
         {view === "front" ? "Facing you" : "Facing away from you"}
