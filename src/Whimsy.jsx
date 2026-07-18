@@ -3629,12 +3629,16 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
           )}
           {hairStyle !== "bald" && (
             <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              {/* The hairstyle paths were authored to frame a small illustrated head circle, not
-                  this photo's actual face proportions -- mapped 1:1 they swallowed the whole
-                  face (afro/puff clouds sat right over the eyes). Scaling down in both axes and
-                  shifting up keeps the volume above the eyebrow line while still reaching
-                  shoulder-length for braids/locs/ponytail. */}
-              <g transform="translate(11 2) scale(0.78 0.48)">
+              {/* Calibrated by matching this photo's actual measured head box (top y=6%, jaw
+                  y=20%, width ~16.8% centered at x=50%) against the scalp-cap path's own
+                  drawn box (y 2.3-20.8, x 37.4-62.6), which is the one shape every style
+                  shares: scale_y=(20-6)/(20.8-2.3)=0.757, translate_y=6-2.3*0.757=4.26;
+                  scale_x=16.8/25.2=0.667, translate_x=50-50*0.667=16.65. This keeps the
+                  scalp/hairline sitting right on the real head, and (per style) lets
+                  braids/locs/ponytail hang past the shoulder while afro/puff/buns/wrap stay
+                  clear of the eyebrow line -- see the afro case above for why its own
+                  circle radius was shrunk to fit through this same mapping. */}
+              <g transform="translate(16.65 4.26) scale(0.667 0.757)">
                 {hair.behind}
                 {hair.scalp}
                 {hair.above}
