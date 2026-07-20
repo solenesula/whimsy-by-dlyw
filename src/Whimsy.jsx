@@ -3598,14 +3598,20 @@ function RecolorLayer({ photoSrc, maskSrc, colorHex, opacity, borderRadius }) {
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(mask, 0, 0, w, h);
       const maskData = ctx.getImageData(0, 0, w, h);
-      const [targetH, targetS] = rgbToHsl(...parseColor(colorHex));
+      const [targetH, targetS, targetL] = rgbToHsl(...parseColor(colorHex));
       const p = photoData.data; const m = maskData.data;
       for (let i = 0; i < p.length; i += 4) {
         const alpha = m[i] / 255; // mask R channel
         if (alpha < 0.05) continue;
         const [, , l] = rgbToHsl(p[i], p[i+1], p[i+2]);
-        const [nr, ng, nb] = hslToRgb(targetH, targetS, l);
-        // Blend: alpha=1 fully replaces, alpha<1 mixes proportionally
+        // Pull lightness toward the target: the photo's own shading stays as
+        // relative variation, but the base tone shifts toward the picker color.
+        // Formula: L_new = L_photo * (1 - pull) + L_target * pull, where pull=0.55
+        // preserves ~half the photo's shading but forces the visible tone toward
+        // the swatch (so pale-pink target actually looks pale-pink on dark skin,
+        // instead of the previous mauve-brown that L-preservation produced).
+        const nl = l * 0.45 + targetL * 0.55;
+        const [nr, ng, nb] = hslToRgb(targetH, targetS, nl);
         p[i]   = p[i]   * (1 - alpha) + nr * alpha;
         p[i+1] = p[i+1] * (1 - alpha) + ng * alpha;
         p[i+2] = p[i+2] * (1 - alpha) + nb * alpha;
