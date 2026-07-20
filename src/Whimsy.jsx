@@ -63,6 +63,7 @@ const SKIN_TONES = [
 // silhouettes; this is the safe version that varies proportion without touching the shared
 // BODY_OUTLINE path all three sizes rely on.
 const BODY_SHAPES = [
+  { key: "b0", label: "Body type XS", scaleX: 0.85, curve: 0.66 },
   { key: "b1", label: "Body type 1", scaleX: 1.0, curve: 0.78 },
   { key: "b2", label: "Body type 2 (default)", scaleX: 1.16, curve: 1.0 },
   { key: "b3", label: "Body type 3", scaleX: 1.34, curve: 1.3 },
@@ -233,7 +234,7 @@ const BACK_PHOTO_HITZONES = [
 // Body type now selects between three real photographed builds instead of scaling one
 // vector shape — "b2" (default) is the original reference photo; "b1"/"b3" are generated
 // variants matched to it (same face, hair, pose, framing), just a slimmer or fuller build.
-const BODY_PHOTO_VARIANT = { b1: "-slim", b2: "", b3: "-full" };
+const BODY_PHOTO_VARIANT = { b0: "-xslim", b1: "-slim", b2: "", b3: "-full" };
 
 // Pain quality descriptors, paired with location on the body map. This is the same
 // location + quality pairing clinical pain body maps use (PainScale, CHOIR), so the
@@ -985,7 +986,7 @@ export default function Whimsy() {
   COLORS.line = activeTheme.line;
   GRAD = `linear-gradient(135deg, ${activeTheme.plum}, ${activeTheme.plumDark})`;
   const activeSkin = SKIN_TONES.find((s) => s.key === skinTone) || SKIN_TONES[0];
-  const activeBodyShape = BODY_SHAPES.find((s) => s.key === bodyShape) || BODY_SHAPES[1];
+  const activeBodyShape = BODY_SHAPES.find((s) => s.key === bodyShape) || BODY_SHAPES.find((s) => s.key === "b2");
   const activeHairColor = HAIR_COLORS.find((h) => h.key === hairColor) || HAIR_COLORS[0];
   const activeWrapColor = WRAP_COLORS.find((w) => w.key === wrapColor) || WRAP_COLORS[0];
   const activeBodysuitColor = BODYSUIT_COLORS.find((b) => b.key === bodysuitColor) || BODYSUIT_COLORS[0];
