@@ -63,7 +63,6 @@ const SKIN_TONES = [
 // silhouettes; this is the safe version that varies proportion without touching the shared
 // BODY_OUTLINE path all three sizes rely on.
 const BODY_SHAPES = [
-  { key: "b0", label: "Body type XS", scaleX: 0.85, curve: 0.66 },
   { key: "b1", label: "Body type 1", scaleX: 1.0, curve: 0.78 },
   { key: "b2", label: "Body type 2 (default)", scaleX: 1.16, curve: 1.0 },
   { key: "b3", label: "Body type 3", scaleX: 1.34, curve: 1.3 },
@@ -234,7 +233,7 @@ const BACK_PHOTO_HITZONES = [
 // Body type now selects between three real photographed builds instead of scaling one
 // vector shape — "b2" (default) is the original reference photo; "b1"/"b3" are generated
 // variants matched to it (same face, hair, pose, framing), just a slimmer or fuller build.
-const BODY_PHOTO_VARIANT = { b0: "-xslim", b1: "-slim", b2: "", b3: "-full" };
+const BODY_PHOTO_VARIANT = { b1: "-slim", b2: "", b3: "-full" };
 
 // Pain quality descriptors, paired with location on the body map. This is the same
 // location + quality pairing clinical pain body maps use (PainScale, CHOIR), so the
@@ -3539,43 +3538,92 @@ function getHairOverlay(styleKey, hairColor) {
   return { behind, scalp, above };
 }
 
-// Recolors a photo region using a grayscale mask (white = recolor, black = leave alone).
-// CSS `mask-image` + `mix-blend-mode` together turned out to be unreliable across browsers —
-// on some renders the blend ignored the mask's transparent areas entirely and washed the
-// whole photo (including hands/feet) in the overlay color. Baking the mask into a real PNG
-// alpha channel via canvas, then blending that fully-opaque/fully-transparent image, sidesteps
-// that bug: mix-blend-mode only ever touches pixels the canvas actually painted.
-function RecolorLayer({ maskSrc, colorHex, opacity, borderRadius }) {
+// Recolors a photo region by loading the actual photo AND the mask, then rewriting the
+// masked pixels' RGB to a HSL blend where the target color's HUE + SATURATION replace the
+// photo's, while the photo's LIGHTNESS is preserved. Result: dark skin becomes dark pink,
+// pale skin becomes pale pink, all shading/detail preserved. Previous CSS mix-blend-mode
+// approaches couldn't do this because they can only shift hue OR color relative to whatever
+// lightness the browser saw underneath -- and CSS "color" blend still leaves warm-brown
+// pixels visibly warm-brown when the source hue overwhelms the tint. This canvas approach
+// bakes the replacement into pixel data directly.
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0; const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+  }
+  return [h, s, l];
+}
+function hslToRgb(h, s, l) {
+  h /= 360;
+  if (s === 0) return [l*255, l*255, l*255];
+  const hue2rgb = (p, q, t) => {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1/6) return p + (q - p) * 6 * t;
+    if (t < 1/2) return q;
+    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+    return p;
+  };
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  return [hue2rgb(p, q, h + 1/3)*255, hue2rgb(p, q, h)*255, hue2rgb(p, q, h - 1/3)*255];
+}
+
+function RecolorLayer({ photoSrc, maskSrc, colorHex, opacity, borderRadius }) {
   const [dataUrl, setDataUrl] = useState(null);
   useEffect(() => {
     let cancelled = false;
     setDataUrl(null);
-    const img = new Image();
-    img.onload = () => {
-      if (cancelled) return;
+    const photo = new Image();
+    const mask = new Image();
+    photo.crossOrigin = "anonymous";
+    mask.crossOrigin = "anonymous";
+    let photoReady = false, maskReady = false;
+    const tryRender = () => {
+      if (cancelled || !photoReady || !maskReady) return;
+      const w = photo.naturalWidth, h = photo.naturalHeight;
       const canvas = document.createElement("canvas");
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
+      canvas.width = w; canvas.height = h;
       const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0);
-      const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const [r, g, b] = parseColor(colorHex);
-      const d = frame.data;
-      for (let i = 0; i < d.length; i += 4) {
-        const luminance = d[i]; // mask is grayscale — R channel holds the intended alpha
-        d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = luminance;
+      // Draw photo
+      ctx.drawImage(photo, 0, 0);
+      const photoData = ctx.getImageData(0, 0, w, h);
+      // Draw mask (may need scaling if sizes differ, but they should match)
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(mask, 0, 0, w, h);
+      const maskData = ctx.getImageData(0, 0, w, h);
+      const [targetH, targetS] = rgbToHsl(...parseColor(colorHex));
+      const p = photoData.data; const m = maskData.data;
+      for (let i = 0; i < p.length; i += 4) {
+        const alpha = m[i] / 255; // mask R channel
+        if (alpha < 0.05) continue;
+        const [, , l] = rgbToHsl(p[i], p[i+1], p[i+2]);
+        const [nr, ng, nb] = hslToRgb(targetH, targetS, l);
+        // Blend: alpha=1 fully replaces, alpha<1 mixes proportionally
+        p[i]   = p[i]   * (1 - alpha) + nr * alpha;
+        p[i+1] = p[i+1] * (1 - alpha) + ng * alpha;
+        p[i+2] = p[i+2] * (1 - alpha) + nb * alpha;
       }
-      ctx.putImageData(frame, 0, 0);
+      ctx.putImageData(photoData, 0, 0);
       setDataUrl(canvas.toDataURL());
     };
-    img.src = maskSrc;
+    photo.onload = () => { photoReady = true; tryRender(); };
+    mask.onload = () => { maskReady = true; tryRender(); };
+    photo.src = photoSrc;
+    mask.src = maskSrc;
     return () => { cancelled = true; };
-  }, [maskSrc, colorHex]);
+  }, [photoSrc, maskSrc, colorHex]);
   if (!dataUrl) return null;
   return (
     <img aria-hidden="true" src={dataUrl} alt="" draggable={false}
       className="absolute inset-0 w-full h-full pointer-events-none select-none"
-      style={{ mixBlendMode: "color", opacity, borderRadius }} />
+      style={{ opacity, borderRadius }} />
   );
 }
 
@@ -3622,12 +3670,18 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
           <img key={photoSrc} src={photoSrc} alt="" draggable={false}
             className="absolute inset-0 w-full h-full object-cover select-none"
             style={{ borderRadius: 18 }} />
-          {!skinIsDefault && (
-            <RecolorLayer key={"skin-" + skinMaskSrc} maskSrc={skinMaskSrc} colorHex={skinFill} opacity={0.7} borderRadius={18} />
-          )}
-          {!bodysuitIsDefault && (
-            <RecolorLayer key={"cloth-" + clothingMaskSrc} maskSrc={clothingMaskSrc} colorHex={bodysuitColorHex} opacity={0.85} borderRadius={18} />
-          )}
+          {/* Skin recolor ALWAYS renders (even for the default "blush" tone) so the visible
+              skin actually matches the picker -- previously the default was "no overlay"
+              which meant users saw the underlying dark-brown photo skin no matter what
+              tone they picked, and only realized the picker was live when they clicked
+              off-default. With canvas-based HSL replacement, opacity=1 gives full color
+              swap. */}
+          <RecolorLayer key={"skin-" + photoSrc + "-" + skinMaskSrc + "-" + skinFill}
+            photoSrc={photoSrc} maskSrc={skinMaskSrc} colorHex={skinFill}
+            opacity={1} borderRadius={18} />
+          <RecolorLayer key={"cloth-" + photoSrc + "-" + clothingMaskSrc + "-" + bodysuitColorHex}
+            photoSrc={photoSrc} maskSrc={clothingMaskSrc} colorHex={bodysuitColorHex}
+            opacity={1} borderRadius={18} />
           {/* SVG hair overlays: parked. The hairstyle shapes were authored against an
               illustrated head, and every attempt to remap them onto this photo produced
               distortions the user rejected (blocky braids, oversized afros, hair covering
