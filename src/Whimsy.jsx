@@ -3698,15 +3698,18 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
           {hairStyle && hairStyle !== "bald" && view === "front" && (
             <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               {(() => {
+                // All hair overlays must sit ABOVE the eyebrow line (y=6% of image
+                // height on this photo -- the head runs y=5% to y=20%, eyebrows at y~11%).
+                // Ellipse bottom = cy + ry, so keep cy + ry <= 8 to stay clear of the face.
                 const shapes = {
-                  afro:      { cx: 50, cy: 8.5, rx: 9.5,  ry: 7.5, extra: 0 },
-                  puff:      { cx: 50, cy: 6.5, rx: 6.5,  ry: 5.5, extra: 0 },
-                  spacebuns: { cx: 50, cy: 8.0, rx: 4.5,  ry: 3.5, extra: 1 },
-                  ponytail:  { cx: 50, cy: 8.5, rx: 5.5,  ry: 4.5, extra: 2 },
-                  braids:    { cx: 50, cy: 9.5, rx: 7.5,  ry: 5.5, extra: 3 },
-                  bantu:     { cx: 50, cy: 8.0, rx: 6.5,  ry: 4.5, extra: 4 },
-                  locs:      { cx: 50, cy: 9.5, rx: 6.5,  ry: 5.5, extra: 3 },
-                  headwrap:  { cx: 50, cy: 8.5, rx: 8.5,  ry: 6.0, extra: 5 },
+                  afro:      { cx: 50, cy: 4.0, rx: 8.0,  ry: 3.5, extra: 0 },
+                  puff:      { cx: 50, cy: 2.5, rx: 5.0,  ry: 3.0, extra: 0 },
+                  spacebuns: { cx: 50, cy: 4.5, rx: 4.0,  ry: 2.5, extra: 1 },
+                  ponytail:  { cx: 50, cy: 4.5, rx: 5.0,  ry: 3.0, extra: 2 },
+                  braids:    { cx: 50, cy: 5.0, rx: 6.0,  ry: 3.0, extra: 3 },
+                  bantu:     { cx: 50, cy: 4.5, rx: 5.5,  ry: 3.0, extra: 4 },
+                  locs:      { cx: 50, cy: 5.0, rx: 5.5,  ry: 3.0, extra: 3 },
+                  headwrap:  { cx: 50, cy: 5.0, rx: 7.5,  ry: 3.5, extra: 5 },
                 };
                 const s = shapes[hairStyle] || shapes.afro;
                 const color = hairColorHex || "#241712";
