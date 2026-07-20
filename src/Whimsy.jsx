@@ -3688,12 +3688,55 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
           <RecolorLayer key={"cloth-" + photoSrc + "-" + clothingMaskSrc + "-" + bodysuitColorHex}
             photoSrc={photoSrc} maskSrc={clothingMaskSrc} colorHex={bodysuitColorHex}
             opacity={1} borderRadius={18} />
-          {/* SVG hair overlays: parked. The hairstyle shapes were authored against an
-              illustrated head, and every attempt to remap them onto this photo produced
-              distortions the user rejected (blocky braids, oversized afros, hair covering
-              the face, etc.). Hidden until we can produce actual per-style hair photos.
-              The hairstyle picker in Appearance is kept so users can express preference
-              and their choice is preserved for a future revamp. */}
+          {/* Hair overlay: a simple color-tinted crown shape that varies per hairstyle,
+              rendered only on the FRONT view since the back is bald-only. This is the
+              "does something visible" version -- it doesn't try to draw braids vs. locs
+              faithfully, but it does two things a real user needs: (1) shows a hair color
+              on the head, (2) changes shape between short/tall/wide styles so the picker
+              feels responsive. Kept deliberately abstract (a soft cloud on the crown)
+              since detailed illustrated hair paths clashed with the photograph. */}
+          {hairStyle && hairStyle !== "bald" && view === "front" && (
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              {(() => {
+                const shapes = {
+                  afro:      { cx: 50, cy: 8.5, rx: 9.5,  ry: 7.5, extra: 0 },
+                  puff:      { cx: 50, cy: 6.5, rx: 6.5,  ry: 5.5, extra: 0 },
+                  spacebuns: { cx: 50, cy: 8.0, rx: 4.5,  ry: 3.5, extra: 1 },
+                  ponytail:  { cx: 50, cy: 8.5, rx: 5.5,  ry: 4.5, extra: 2 },
+                  braids:    { cx: 50, cy: 9.5, rx: 7.5,  ry: 5.5, extra: 3 },
+                  bantu:     { cx: 50, cy: 8.0, rx: 6.5,  ry: 4.5, extra: 4 },
+                  locs:      { cx: 50, cy: 9.5, rx: 6.5,  ry: 5.5, extra: 3 },
+                  headwrap:  { cx: 50, cy: 8.5, rx: 8.5,  ry: 6.0, extra: 5 },
+                };
+                const s = shapes[hairStyle] || shapes.afro;
+                const color = hairColorHex || "#241712";
+                return (
+                  <g>
+                    <ellipse cx={s.cx} cy={s.cy} rx={s.rx} ry={s.ry} fill={color} opacity="0.92" />
+                    {s.extra === 1 && [
+                      <ellipse key="bl" cx={s.cx - 3.2} cy={s.cy - 2.0} rx={2.1} ry={2.1} fill={color} opacity="0.95" />,
+                      <ellipse key="br" cx={s.cx + 3.2} cy={s.cy - 2.0} rx={2.1} ry={2.1} fill={color} opacity="0.95" />,
+                    ]}
+                    {s.extra === 2 && (
+                      <ellipse cx={s.cx + 4.5} cy={s.cy + 3.0} rx={2.0} ry={5.0} fill={color} opacity="0.9" />
+                    )}
+                    {s.extra === 3 && [
+                      <rect key="lb" x={s.cx - 8.0} y={s.cy + 1} width={2.2} height={12} fill={color} opacity="0.9" />,
+                      <rect key="lc" x={s.cx - 4.5} y={s.cy + 1} width={2.2} height={13} fill={color} opacity="0.9" />,
+                      <rect key="rc" x={s.cx + 2.3} y={s.cy + 1} width={2.2} height={13} fill={color} opacity="0.9" />,
+                      <rect key="rb" x={s.cx + 5.8} y={s.cy + 1} width={2.2} height={12} fill={color} opacity="0.9" />,
+                    ]}
+                    {s.extra === 4 && [0,1,2,3,4].map(i => (
+                      <circle key={i} cx={s.cx - 6 + i*3} cy={s.cy - 0.5} r={1.5} fill={color} opacity="0.95" />
+                    ))}
+                    {s.extra === 5 && (
+                      <path d={`M${s.cx - s.rx} ${s.cy} Q ${s.cx} ${s.cy + s.ry * 0.7} ${s.cx + s.rx} ${s.cy} Z`} fill={color} opacity="0.6" />
+                    )}
+                  </g>
+                );
+              })()}
+            </svg>
+          )}
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             {hitzones.map((z) => {
               const on = isOn(z.k);
