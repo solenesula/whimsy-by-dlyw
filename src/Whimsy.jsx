@@ -3574,7 +3574,7 @@ function RecolorLayer({ maskSrc, colorHex, opacity, borderRadius }) {
   return (
     <img aria-hidden="true" src={dataUrl} alt="" draggable={false}
       className="absolute inset-0 w-full h-full pointer-events-none select-none"
-      style={{ mixBlendMode: "hue", opacity, borderRadius }} />
+      style={{ mixBlendMode: "color", opacity, borderRadius }} />
   );
 }
 
@@ -3627,24 +3627,12 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
           {!bodysuitIsDefault && (
             <RecolorLayer key={"cloth-" + clothingMaskSrc} maskSrc={clothingMaskSrc} colorHex={bodysuitColorHex} opacity={0.85} borderRadius={18} />
           )}
-          {hairStyle !== "bald" && (
-            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              {/* Calibrated by matching this photo's actual measured head box (top y=6%, jaw
-                  y=20%, width ~16.8% centered at x=50%) against the scalp-cap path's own
-                  drawn box (y 2.3-20.8, x 37.4-62.6), which is the one shape every style
-                  shares: scale_y=(20-6)/(20.8-2.3)=0.757, translate_y=6-2.3*0.757=4.26;
-                  scale_x=16.8/25.2=0.667, translate_x=50-50*0.667=16.65. This keeps the
-                  scalp/hairline sitting right on the real head, and (per style) lets
-                  braids/locs/ponytail hang past the shoulder while afro/puff/buns/wrap stay
-                  clear of the eyebrow line -- see the afro case above for why its own
-                  circle radius was shrunk to fit through this same mapping. */}
-              <g transform="translate(16.65 4.26) scale(0.667 0.757)">
-                {hair.behind}
-                {hair.scalp}
-                {hair.above}
-              </g>
-            </svg>
-          )}
+          {/* SVG hair overlays: parked. The hairstyle shapes were authored against an
+              illustrated head, and every attempt to remap them onto this photo produced
+              distortions the user rejected (blocky braids, oversized afros, hair covering
+              the face, etc.). Hidden until we can produce actual per-style hair photos.
+              The hairstyle picker in Appearance is kept so users can express preference
+              and their choice is preserved for a future revamp. */}
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             {hitzones.map((z) => {
               const on = isOn(z.k);
