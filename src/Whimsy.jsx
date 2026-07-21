@@ -3710,8 +3710,6 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
                 // centre. That gives full-width coverage of the crown while keeping the
                 // lowest point of the hair above the eyes.
                 const CX = 50;           // head centre x (measured 49.9)
-                const TEMPLE_Y = 11;     // where hair meets the face at the sides
-                const CENTRE_LIFT = 1.2; // how far the hairline rises over the forehead
 
                 // The svg uses preserveAspectRatio="none" over a 927x1696 photo, so one
                 // y-unit renders 1.83x taller than one x-unit. Without correcting for that
@@ -3721,104 +3719,279 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
                 const ASPECT = 927 / 1696;          // 0.547
                 const vy = (xUnits) => xUnits * ASPECT;
 
-                // dome(halfWidth, visualHeightInXUnits) -> SVG path string
-                const dome = (rx, hx, sideY = TEMPLE_Y, lift = CENTRE_LIFT) => {
-                  const ry = vy(hx);
-                  return `M ${CX - rx} ${sideY}` +
-                    ` A ${rx} ${ry} 0 0 1 ${CX + rx} ${sideY}` +
-                    ` Q ${CX} ${sideY - lift} ${CX - rx} ${sideY} Z`;
+                // A dome alone reads as a helmet brim slicing across the forehead, because
+                // real hair does not stop at the hairline -- it wraps the skull and comes
+                // down past the ears to frame the face. So the hair mass is an ellipse with
+                // a face-shaped opening cut out of it.
+                //
+                // This uses an SVG <mask> rather than fill-rule="evenodd" on two subpaths.
+                // With evenodd, any part of the face ellipse hanging BELOW the mass is a
+                // single-crossing region, so it fills solid -- which painted a black mask
+                // across the chin. A mask subtracts unconditionally, whatever the geometry.
+                const MASK_ID = "whimsy-hair-cutout";
+
+                // Face opening, measured against the photo: the head spans x=41-59 and
+                // y=5.7-19, so an opening centred at (50,14) with rx 8.2 puts the hairline
+                // at y=8.5 -- above the eyes (~y=12) and below the crown.
+                const FACE = { w: 8.2, h: 10, cy: 14 };
+
+                // Coils traced around the mass's outer edge, wrapping from the lower-left,
+                // over the crown, to the lower-right so the silhouette reads as texture.
+                const coilRing = (ow, oh, ocy, count, size, keyPrefix, wrap = 0.08) => {
+                  const ory = vy(oh);
+                  const out = [];
+                  // `wrap` is how far past the horizontal the coils continue down the
+                  // sides. A big afro wants a lot; smaller styles want little, or the
+                  // lowest coils land on the cheekbones and read as stray beads.
+                  const from = -wrap * Math.PI, to = (1 + wrap) * Math.PI;
+                  for (let i = 0; i <= count; i++) {
+                    const t = from + (to - from) * (i / count);
+                    out.push(blob(
+                      CX - ow * Math.cos(t),
+                      ocy - ory * Math.sin(t),
+                      size + (i % 3) * (size * 0.25),
+                      `${keyPrefix}${i}`,
+                      0.95
+                    ));
+                  }
+                  return out;
                 };
 
                 const color = hairColorHex || "#241712";
-                const dark = darken(color, 0.22);
+                const dark = darken(color, 0.24);
+                const light = lighten(color, 0.26);
 
                 // Round blob that actually renders round despite the stretched viewBox.
-                const blob = (cx, cy, r, key, op = 0.95) => (
+                const blob = (cx, cy, r, key, op = 0.95, fill = color) => (
                   <ellipse key={key} cx={cx} cy={cy} rx={r} ry={vy(r)}
-                    fill={color} opacity={op} />
+                    fill={fill} opacity={op} />
                 );
 
-                // Strands hang OUTSIDE the face (face spans x=41-59), from the temples down.
-                const strand = (x, top, len, w, key) => (
-                  <rect key={key} x={x} y={top} width={w} height={len} rx={w / 2}
-                    fill={color} opacity="0.9" />
+                // A bumpy coil edge traced along the dome's arc, so the silhouette reads
+                // as textured hair rather than a smooth helmet.
+
+                // Curl flecks across the hair mass for depth. Offsets are jittered off a
+                // fixed sine so the texture doesn't read as a regular polka-dot grid.
+                const innerCurls = (ow, oh, ocy, keyPrefix) => {
+                  const ory = vy(oh);
+                  const out = [];
+                  let k = 0;
+                  [0.42, 0.66, 0.86].forEach((ring, r) => {
+                    const m = 11;
+                    for (let i = 0; i < m; i++) {
+                      const j = Math.sin((i + 1) * (r + 2) * 2.3);
+                      const t = Math.PI * ((i + 0.5) / m) + j * 0.055;
+                      const rr = ring + j * 0.05;
+                      out.push(blob(
+                        CX - ow * rr * Math.cos(t),
+                        ocy - ory * rr * Math.sin(t),
+                        0.95 + Math.abs(j) * 0.5,
+                        `${keyPrefix}${k}`,
+                        0.3,
+                        k++ % 2 ? dark : light
+                      ));
+                    }
+                  });
+                  return out;
+                };
+
+                // A single loc: rope-like, with segment ridges across it.
+                const loc = (x, top, len, w, key) => {
+                  const segs = [];
+                  const n = Math.max(3, Math.round(len / 2.1));
+                  for (let i = 1; i < n; i++) {
+                    const y = top + (i * len) / n;
+                    segs.push(
+                      <path key={`${key}s${i}`}
+                        d={`M ${x} ${y} Q ${x + w / 2} ${y + 0.55} ${x + w} ${y - 0.15}`}
+                        stroke={dark} strokeWidth="0.32" fill="none" opacity="0.5" />
+                    );
+                  }
+                  return (
+                    <g key={key}>
+                      <rect x={x} y={top} width={w} height={len} rx={w / 2}
+                        fill={color} opacity="0.93" />
+                      <rect x={x + w * 0.18} y={top + 0.6} width={w * 0.24} height={len - 1.2}
+                        rx={w * 0.12} fill={light} opacity="0.22" />
+                      {segs}
+                    </g>
+                  );
+                };
+
+                // A single braid: alternating chevron plait marks.
+                const braid = (x, top, len, w, key) => {
+                  const ticks = [];
+                  const n = Math.max(4, Math.round(len / 1.7));
+                  for (let i = 1; i < n; i++) {
+                    const y = top + (i * len) / n;
+                    const d = i % 2 === 0 ? 1 : -1;
+                    ticks.push(
+                      <line key={`${key}t${i}`}
+                        x1={x} y1={y - 0.4 * d} x2={x + w} y2={y + 0.4 * d}
+                        stroke={dark} strokeWidth="0.3" opacity="0.55" strokeLinecap="round" />
+                    );
+                  }
+                  return (
+                    <g key={key}>
+                      <rect x={x} y={top} width={w} height={len} rx={w / 2}
+                        fill={color} opacity="0.93" />
+                      {ticks}
+                    </g>
+                  );
+                };
+
+                // A wrapped knot (bantu / bun): coil lines plus a highlight.
+                const knot = (cx, cy, r, key) => (
+                  <g key={key}>
+                    <ellipse cx={cx} cy={cy} rx={r} ry={vy(r)} fill={color} opacity="0.96" />
+                    <path d={`M ${cx - r * 0.72} ${cy + vy(r) * 0.1} Q ${cx} ${cy + vy(r) * 0.85} ${cx + r * 0.72} ${cy + vy(r) * 0.1}`}
+                      stroke={dark} strokeWidth="0.3" fill="none" opacity="0.55" />
+                    <path d={`M ${cx - r * 0.5} ${cy - vy(r) * 0.3} Q ${cx} ${cy + vy(r) * 0.3} ${cx + r * 0.5} ${cy - vy(r) * 0.3}`}
+                      stroke={dark} strokeWidth="0.26" fill="none" opacity="0.42" />
+                    <ellipse cx={cx - r * 0.3} cy={cy - vy(r) * 0.38} rx={r * 0.24} ry={vy(r * 0.24)}
+                      fill={light} opacity="0.42" />
+                  </g>
+                );
+
+                // The mass plus any texture that must stay off the face (inner curls,
+                // wrap folds) is drawn inside the cutout mask. Silhouette texture that
+                // should spill past the outline (coil edges) and anything hanging below
+                // the mass (braids, locs, a ponytail) is drawn outside it.
+                const mass = (ow, oh, ocy, face = FACE, inner = null) => (
+                  <g key="mass">
+                    <defs>
+                      <mask id={MASK_ID} maskUnits="userSpaceOnUse"
+                        x="0" y="0" width="100" height="100">
+                        <rect x="0" y="0" width="100" height="100" fill="#000" />
+                        <ellipse cx={CX} cy={ocy} rx={ow} ry={vy(oh)} fill="#fff" />
+                        <ellipse cx={CX} cy={face.cy} rx={face.w} ry={vy(face.h)} fill="#000" />
+                      </mask>
+                    </defs>
+                    <g mask={`url(#${MASK_ID})`}>
+                      <ellipse cx={CX} cy={ocy} rx={ow} ry={vy(oh)}
+                        fill={color} opacity="0.95" />
+                      {inner}
+                    </g>
+                  </g>
                 );
 
                 switch (hairStyle) {
                   case "afro":
                     return (
                       <g>
-                        <path d={dome(13, 13)} fill={color} opacity="0.94" />
-                        <path d={dome(9, 8)} fill={dark} opacity="0.3" />
+                        {mass(13, 13, 9, FACE, innerCurls(13, 13, 9, "ai"))}
+                        {coilRing(13, 13, 9, 30, 1.5, "ac", 0.22)}
                       </g>
                     );
                   case "puff":
                     return (
                       <g>
-                        <path d={dome(8.5, 5)} fill={color} opacity="0.94" />
-                        {blob(CX, 6, 6.4, "puff")}
-                        <path d={`M ${CX - 6} 9.2 Q ${CX} 10.4 ${CX + 6} 9.2`}
-                          stroke={dark} strokeWidth="0.6" fill="none" opacity="0.7" strokeLinecap="round" />
+                        {mass(9, 8, 10.5)}
+                        {coilRing(9, 8, 10.5, 20, 1.0, "pe")}
+                        {blob(CX, 4.6, 5.6, "puffball")}
+                        {[-2.8, 0, 2.8].map((dx, i) =>
+                          blob(CX + dx, 3.6 + (i % 2) * 1.5, 1.3, `pt${i}`, 0.32, i % 2 ? dark : light)
+                        )}
+                        <path d={`M ${CX - 5.2} 7.6 Q ${CX} 9.0 ${CX + 5.2} 7.6`}
+                          stroke={dark} strokeWidth="0.55" fill="none" opacity="0.7" strokeLinecap="round" />
                       </g>
                     );
                   case "spacebuns":
                     return (
                       <g>
-                        <path d={dome(9, 6)} fill={color} opacity="0.94" />
-                        {blob(CX - 8.6, 6.4, 3.8, "bl")}
-                        {blob(CX + 8.6, 6.4, 3.8, "br")}
+                        {mass(9.5, 8.5, 10)}
+                        {coilRing(9.5, 8.5, 10, 20, 1.0, "se")}
+                        {knot(CX - 7.2, 6.2, 3.6, "bl")}
+                        {knot(CX + 7.2, 6.2, 3.6, "br")}
                       </g>
                     );
                   case "ponytail":
                     return (
                       <g>
-                        <rect x={CX + 8.2} y={8} width={2.8} height={12} rx={1.4}
-                          fill={color} opacity="0.9" />
-                        <path d={dome(9.5, 6)} fill={color} opacity="0.94" />
-                        {blob(CX + 8.4, 8.4, 3, "tie")}
+                        {loc(CX + 8.4, 11, 13, 3.0, "tail")}
+                        {mass(9.5, 8.5, 10, FACE, (
+                          <g key="sweep">
+                            {[0, 1, 2, 3].map((i) => (
+                              <path key={`sw${i}`}
+                                d={`M ${CX - 6 + i * 3} 7.4 Q ${CX + 3} ${6.6 + i * 0.5} ${CX + 8.2} 10.4`}
+                                stroke={dark} strokeWidth="0.3" fill="none" opacity="0.38" />
+                            ))}
+                          </g>
+                        ))}
+                        {knot(CX + 8.6, 10.8, 2.6, "tie")}
                       </g>
                     );
                   case "braids":
                     return (
                       <g>
-                        {strand(CX - 11.4, 8, 16, 2.2, "l1")}
-                        {strand(CX - 14.2, 8.6, 12, 2.0, "l2")}
-                        {strand(CX + 9.2, 8, 16, 2.2, "r1")}
-                        {strand(CX + 12.2, 8.6, 12, 2.0, "r2")}
-                        <path d={dome(11, 7)} fill={color} opacity="0.94" />
+                        {braid(CX - 12.0, 11, 17, 2.2, "l1")}
+                        {braid(CX - 9.3, 11.4, 20, 2.2, "l2")}
+                        {braid(CX + 7.1, 11.4, 20, 2.2, "r1")}
+                        {braid(CX + 9.8, 11, 17, 2.2, "r2")}
+                        {mass(12, 10, 10.5, FACE, (
+                          <g key="parts">
+                            {[0, 1, 2, 3, 4].map((i) => (
+                              <path key={`pt${i}`}
+                                d={`M ${CX - 8 + i * 4} 9.2 Q ${CX - 4 + i * 2} 6.2 ${CX} 4.9`}
+                                stroke={dark} strokeWidth="0.32" fill="none" opacity="0.4" />
+                            ))}
+                          </g>
+                        ))}
                       </g>
                     );
                   case "bantu":
                     return (
                       <g>
-                        <path d={dome(10, 6)} fill={color} opacity="0.94" />
-                        {[-7.2, -2.4, 2.4, 7.2].map((dx, i) =>
-                          blob(CX + dx, i % 2 === 0 ? 7.2 : 6.2, 2.5, `k${i}`, 0.96)
+                        {mass(10, 9, 10)}
+                        {coilRing(10, 9, 10, 20, 0.95, "be")}
+                        {[-6.6, -2.2, 2.2, 6.6].map((dx, i) =>
+                          knot(CX + dx, i % 2 === 0 ? 6.6 : 5.6, 2.4, `k${i}`)
                         )}
                       </g>
                     );
                   case "locs":
                     return (
                       <g>
-                        {strand(CX - 11.6, 8, 19, 2.6, "l1")}
-                        {strand(CX - 14.8, 8.8, 14, 2.4, "l2")}
-                        {strand(CX + 9.0, 8, 19, 2.6, "r1")}
-                        {strand(CX + 12.4, 8.8, 14, 2.4, "r2")}
-                        <path d={dome(11, 7)} fill={color} opacity="0.94" />
+                        {loc(CX - 12.2, 11, 20, 2.5, "l1")}
+                        {loc(CX - 9.3, 11.5, 23, 2.5, "l2")}
+                        {loc(CX + 6.8, 11.5, 23, 2.5, "r1")}
+                        {loc(CX + 9.7, 11, 20, 2.5, "r2")}
+                        {mass(12, 10, 10.5, FACE, (
+                          <g key="parts">
+                            {[0, 1, 2, 3, 4].map((i) => (
+                              <path key={`lr${i}`}
+                                d={`M ${CX - 8 + i * 4} 9.4 L ${CX - 4.4 + i * 2.2} 5.2`}
+                                stroke={dark} strokeWidth="0.45" fill="none" opacity="0.42" strokeLinecap="round" />
+                            ))}
+                          </g>
+                        ))}
                       </g>
                     );
-                  case "headwrap":
+                  case "headwrap": {
+                    const wrapFace = { w: 8.0, h: 9.5, cy: 15.6 };
+                    const folds = (
+                      <g key="folds">
+                        {[0.35, 0.62, 0.88].map((f, i) => (
+                          <path key={`fold${i}`}
+                            d={`M ${CX - 10.6} ${11.4 + i * 1.1} Q ${CX} ${9.8 - vy(9.5) * f} ${CX + 10.6} ${11.4 + i * 1.1}`}
+                            stroke={dark} strokeWidth="0.34" fill="none" opacity="0.38" />
+                        ))}
+                        <ellipse cx={CX - 3.6} cy={7.4} rx={3.0} ry={vy(3.0)}
+                          fill={light} opacity="0.2" />
+                      </g>
+                    );
                     return (
                       <g>
-                        <path d={dome(10.5, 7.5)} fill={color} opacity="0.95" />
-                        <path d={`M ${CX - 10} ${TEMPLE_Y - 0.6} Q ${CX} ${TEMPLE_Y - 3.2} ${CX + 10} ${TEMPLE_Y - 0.6}`}
-                          stroke={dark} strokeWidth="0.7" fill="none" opacity="0.5" />
-                        <path d={`M ${CX + 7} 6.4 L ${CX + 13.5} 3.4 L ${CX + 9.5} 8.4 Z`}
-                          fill={color} opacity="0.9" />
+                        {mass(11, 9.5, 9.8, wrapFace, folds)}
+                        <path d={`M ${CX + 8.4} 8.6 L ${CX + 14.4} 5.0 L ${CX + 10.6} 11.2 Z`}
+                          fill={color} opacity="0.93" />
+                        <path d={`M ${CX + 9.0} 8.8 L ${CX + 13.2} 6.2`}
+                          stroke={dark} strokeWidth="0.3" opacity="0.45" />
                       </g>
                     );
+                  }
                   default:
-                    return <path d={dome(10.5, 7.5)} fill={color} opacity="0.94" />;
+                    return mass(10.5, 9, 10);
                 }
               })()}
             </svg>
