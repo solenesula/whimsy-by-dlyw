@@ -3709,18 +3709,34 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
                 // other, closed along the bottom by a gentle curve that lifts in the
                 // centre. That gives full-width coverage of the crown while keeping the
                 // lowest point of the hair above the eyes.
-                const CX = 50;          // head centre x (measured 49.9)
-                const TEMPLE_Y = 11;    // where hair meets the face at the sides
-                const CENTRE_LIFT = 2;  // how far the hairline rises over the forehead
+                const CX = 50;           // head centre x (measured 49.9)
+                const TEMPLE_Y = 11;     // where hair meets the face at the sides
+                const CENTRE_LIFT = 1.2; // how far the hairline rises over the forehead
 
-                // dome(halfWidth, height) -> SVG path string
-                const dome = (rx, ry, sideY = TEMPLE_Y, lift = CENTRE_LIFT) =>
-                  `M ${CX - rx} ${sideY}` +
-                  ` A ${rx} ${ry} 0 0 1 ${CX + rx} ${sideY}` +
-                  ` Q ${CX} ${sideY - lift} ${CX - rx} ${sideY} Z`;
+                // The svg uses preserveAspectRatio="none" over a 927x1696 photo, so one
+                // y-unit renders 1.83x taller than one x-unit. Without correcting for that
+                // a "circle" draws as a tall cone -- which is exactly what the first pass
+                // looked like. ASPECT converts an x-radius into the y-radius that renders
+                // as the same number of on-screen pixels.
+                const ASPECT = 927 / 1696;          // 0.547
+                const vy = (xUnits) => xUnits * ASPECT;
+
+                // dome(halfWidth, visualHeightInXUnits) -> SVG path string
+                const dome = (rx, hx, sideY = TEMPLE_Y, lift = CENTRE_LIFT) => {
+                  const ry = vy(hx);
+                  return `M ${CX - rx} ${sideY}` +
+                    ` A ${rx} ${ry} 0 0 1 ${CX + rx} ${sideY}` +
+                    ` Q ${CX} ${sideY - lift} ${CX - rx} ${sideY} Z`;
+                };
 
                 const color = hairColorHex || "#241712";
                 const dark = darken(color, 0.22);
+
+                // Round blob that actually renders round despite the stretched viewBox.
+                const blob = (cx, cy, r, key, op = 0.95) => (
+                  <ellipse key={key} cx={cx} cy={cy} rx={r} ry={vy(r)}
+                    fill={color} opacity={op} />
+                );
 
                 // Strands hang OUTSIDE the face (face spans x=41-59), from the temples down.
                 const strand = (x, top, len, w, key) => (
@@ -3732,78 +3748,77 @@ function BodyMap({ selected, setSelected, skin, shape, hairStyle, hairColorHex, 
                   case "afro":
                     return (
                       <g>
-                        <path d={dome(10, 10)} fill={color} opacity="0.94" />
-                        <path d={dome(7.5, 6)} fill={dark} opacity="0.35" />
+                        <path d={dome(13, 13)} fill={color} opacity="0.94" />
+                        <path d={dome(9, 8)} fill={dark} opacity="0.3" />
                       </g>
                     );
                   case "puff":
                     return (
                       <g>
-                        <path d={dome(7, 4.5)} fill={color} opacity="0.94" />
-                        <ellipse cx={CX} cy={2.2} rx={5.6} ry={4.2} fill={color} opacity="0.95" />
-                        <path d={`M ${CX - 5} 5.6 Q ${CX} 7.4 ${CX + 5} 5.6`}
-                          stroke={dark} strokeWidth="0.7" fill="none" opacity="0.7" strokeLinecap="round" />
+                        <path d={dome(8.5, 5)} fill={color} opacity="0.94" />
+                        {blob(CX, 6, 6.4, "puff")}
+                        <path d={`M ${CX - 6} 9.2 Q ${CX} 10.4 ${CX + 6} 9.2`}
+                          stroke={dark} strokeWidth="0.6" fill="none" opacity="0.7" strokeLinecap="round" />
                       </g>
                     );
                   case "spacebuns":
                     return (
                       <g>
-                        <path d={dome(8, 5)} fill={color} opacity="0.94" />
-                        <circle cx={CX - 7.5} cy={3.4} r={3.1} fill={color} opacity="0.95" />
-                        <circle cx={CX + 7.5} cy={3.4} r={3.1} fill={color} opacity="0.95" />
+                        <path d={dome(9, 6)} fill={color} opacity="0.94" />
+                        {blob(CX - 8.6, 6.4, 3.8, "bl")}
+                        {blob(CX + 8.6, 6.4, 3.8, "br")}
                       </g>
                     );
                   case "ponytail":
                     return (
                       <g>
-                        <rect x={CX + 7.4} y={8} width={2.6} height={13} rx={1.3}
+                        <rect x={CX + 8.2} y={8} width={2.8} height={12} rx={1.4}
                           fill={color} opacity="0.9" />
-                        <path d={dome(8.5, 5.5)} fill={color} opacity="0.94" />
-                        <ellipse cx={CX + 7.2} cy={7.4} rx={2.6} ry={2} fill={color} opacity="0.95" />
+                        <path d={dome(9.5, 6)} fill={color} opacity="0.94" />
+                        {blob(CX + 8.4, 8.4, 3, "tie")}
                       </g>
                     );
                   case "braids":
                     return (
                       <g>
-                        {strand(CX - 10.6, 8, 17, 2.2, "l1")}
-                        {strand(CX - 13.0, 8.6, 13, 2.0, "l2")}
-                        {strand(CX + 8.4, 8, 17, 2.2, "r1")}
-                        {strand(CX + 11.0, 8.6, 13, 2.0, "r2")}
-                        <path d={dome(10, 6.5)} fill={color} opacity="0.94" />
+                        {strand(CX - 11.4, 8, 16, 2.2, "l1")}
+                        {strand(CX - 14.2, 8.6, 12, 2.0, "l2")}
+                        {strand(CX + 9.2, 8, 16, 2.2, "r1")}
+                        {strand(CX + 12.2, 8.6, 12, 2.0, "r2")}
+                        <path d={dome(11, 7)} fill={color} opacity="0.94" />
                       </g>
                     );
                   case "bantu":
                     return (
                       <g>
-                        <path d={dome(9, 5)} fill={color} opacity="0.94" />
-                        {[-6.4, -2.1, 2.1, 6.4].map((dx, i) => (
-                          <circle key={i} cx={CX + dx} cy={i % 2 === 0 ? 4.2 : 3.2}
-                            r={2.1} fill={color} opacity="0.96" />
-                        ))}
+                        <path d={dome(10, 6)} fill={color} opacity="0.94" />
+                        {[-7.2, -2.4, 2.4, 7.2].map((dx, i) =>
+                          blob(CX + dx, i % 2 === 0 ? 7.2 : 6.2, 2.5, `k${i}`, 0.96)
+                        )}
                       </g>
                     );
                   case "locs":
                     return (
                       <g>
-                        {strand(CX - 10.8, 8, 20, 2.6, "l1")}
-                        {strand(CX - 13.6, 8.8, 15, 2.4, "l2")}
-                        {strand(CX + 8.2, 8, 20, 2.6, "r1")}
-                        {strand(CX + 11.2, 8.8, 15, 2.4, "r2")}
-                        <path d={dome(10, 6.5)} fill={color} opacity="0.94" />
+                        {strand(CX - 11.6, 8, 19, 2.6, "l1")}
+                        {strand(CX - 14.8, 8.8, 14, 2.4, "l2")}
+                        {strand(CX + 9.0, 8, 19, 2.6, "r1")}
+                        {strand(CX + 12.4, 8.8, 14, 2.4, "r2")}
+                        <path d={dome(11, 7)} fill={color} opacity="0.94" />
                       </g>
                     );
                   case "headwrap":
                     return (
                       <g>
-                        <path d={dome(9.5, 7)} fill={color} opacity="0.95" />
-                        <path d={`M ${CX - 9.5} ${TEMPLE_Y} Q ${CX} ${TEMPLE_Y - 4.5} ${CX + 9.5} ${TEMPLE_Y}`}
-                          stroke={dark} strokeWidth="0.8" fill="none" opacity="0.55" />
-                        <path d={`M ${CX + 6} 4.4 L ${CX + 11.5} 0.6 L ${CX + 8.5} 6.4 Z`}
+                        <path d={dome(10.5, 7.5)} fill={color} opacity="0.95" />
+                        <path d={`M ${CX - 10} ${TEMPLE_Y - 0.6} Q ${CX} ${TEMPLE_Y - 3.2} ${CX + 10} ${TEMPLE_Y - 0.6}`}
+                          stroke={dark} strokeWidth="0.7" fill="none" opacity="0.5" />
+                        <path d={`M ${CX + 7} 6.4 L ${CX + 13.5} 3.4 L ${CX + 9.5} 8.4 Z`}
                           fill={color} opacity="0.9" />
                       </g>
                     );
                   default:
-                    return <path d={dome(9.5, 7)} fill={color} opacity="0.94" />;
+                    return <path d={dome(10.5, 7.5)} fill={color} opacity="0.94" />;
                 }
               })()}
             </svg>
